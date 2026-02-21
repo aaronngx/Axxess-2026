@@ -3,7 +3,7 @@ import * as FileSystem from 'expo-file-system';
 
 const GROQ_API_KEY = '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';
 const ELEVENLABS_API_KEY = 'sk_eabcea9335c8b2721b637f42f14d777e84068a8a301e672f'; // ADDED YOUR KEY
-const ELEVENLABS_VOICE_ID = 'EXAVITQu4vr4xnSDxMaL'; // Sarah - clear and professional female voice
+const ELEVENLABS_VOICE_ID = 'hpp4J3VqNfWAUOO0d1Us'; // Bella - female voice
 const LLM_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const STT_URL = 'https://api.groq.com/openai/v1/audio/transcriptions';
 const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
@@ -139,24 +139,37 @@ export const generateElevenLabsSpeech = async (text: string) => {
             return null;
         }
 
+        console.log('ElevenLabs requested TTS successfully.');
         // Get raw audio buffer
         const arrayBuffer = await response.arrayBuffer();
+        console.log('ArrayBuffer retrieved, byteLength:', arrayBuffer.byteLength);
 
         // Safely convert ArrayBuffer to Base64 in JavaScript 
         // string.fromCharCode.apply(null, bytes) can exceed stack size, so we iterate
         let binaryString = '';
         const bytes = new Uint8Array(arrayBuffer);
+        console.log('Uint8Array created');
+
         const len = bytes.byteLength;
         for (let i = 0; i < len; i++) {
             binaryString += String.fromCharCode(bytes[i]);
         }
+        console.log('binaryString completed, length:', binaryString.length);
 
         const base64Audio = btoa(binaryString);
+        console.log('btoa completed.');
 
-        // Return valid data URI for Expo AV
-        return `data:audio/mpeg;base64,${base64Audio}`;
+        // Write to a temporary file instead of returning a data URI which can crash Expo AV
+        const fileUri = FileSystem.cacheDirectory + 'elevenlabs_tts.mp3';
+
+        await FileSystem.writeAsStringAsync(fileUri, base64Audio, {
+            encoding: FileSystem.EncodingType.Base64,
+        });
+
+        console.log('Audio file saved to:', fileUri);
+        return fileUri;
     } catch (error) {
-        console.error('ElevenLabs TTS Error:', error);
+        console.error('ElevenLabs TTS Error internally:', error);
         return null;
     }
 };

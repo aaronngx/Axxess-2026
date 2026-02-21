@@ -23,6 +23,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
     const recordingRef = useRef<Audio.Recording | null>(null);
     const [preferredVoice, setPreferredVoice] = useState<string | undefined>();
     const [volume, setVolume] = useState(0);
+    const [isSpeakerOn, setIsSpeakerOn] = useState(true);
     const [debugText, setDebugText] = useState('');
     const pulseAnim = useRef(new Animated.Value(1)).current;
     const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -100,6 +101,26 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
         setStatus('idle');
     };
 
+    const toggleSpeaker = async () => {
+        const nextState = !isSpeakerOn;
+        setIsSpeakerOn(nextState);
+        try {
+            await Audio.setAudioModeAsync({
+                allowsRecordingIOS: true,
+                playsInSilentModeIOS: true, // Always true to hear AI in silent mode
+                staysActiveInBackground: true,
+                interruptionModeIOS: 1, // DoNotMix
+                shouldDuckAndroid: true,
+                interruptionModeAndroid: 1,
+                playThroughEarpieceAndroid: !nextState, // Force loudspeaker if On
+            });
+            // Haptic feedback
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        } catch (e) {
+            console.error("Failed to toggle speaker:", e);
+        }
+    };
+
     const startListening = async () => {
         if (!isActiveRef.current) return;
         try {
@@ -117,7 +138,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
                 interruptionModeIOS: 1,
                 shouldDuckAndroid: true,
                 interruptionModeAndroid: 1,
-                playThroughEarpieceAndroid: false
+                playThroughEarpieceAndroid: !isSpeakerOn
             });
 
             const { recording: newRecording } = await Audio.Recording.createAsync(
@@ -321,6 +342,16 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
                             </TouchableOpacity>
                         )}
 
+                        <View style={styles.secondaryControls}>
+                            <TouchableOpacity
+                                style={[styles.controlCircle, isSpeakerOn && styles.activeControl]}
+                                onPress={toggleSpeaker}
+                            >
+                                <Text style={styles.controlIcon}>{isSpeakerOn ? '🔊' : '🔈'}</Text>
+                                <Text style={styles.controlLabel}>Speaker</Text>
+                            </TouchableOpacity>
+                        </View>
+
                         <View style={styles.statusBadge}>
                             <View style={[styles.statusDot, { backgroundColor: status === 'listening' ? '#4CD137' : '#FF4757' }]} />
                             <Text style={styles.statusBadgeText}>
@@ -365,4 +396,9 @@ const styles = StyleSheet.create({
     hintText: { color: 'rgba(255,255,255,0.4)', marginTop: 10, fontSize: 14, fontWeight: '500' },
     endBtn: { marginTop: 40, paddingVertical: 15, paddingHorizontal: 40, borderRadius: 30, backgroundColor: 'rgba(255,71,87,0.15)', borderWidth: 1, borderColor: 'rgba(255,71,87,0.3)' },
     endBtnText: { color: '#FF4757', fontSize: 17, fontWeight: '700' },
+    secondaryControls: { flexDirection: 'row', justifyContent: 'center', marginBottom: 25, width: '100%' },
+    controlCircle: { alignItems: 'center', justifyContent: 'center', width: 70, height: 70, borderRadius: 35, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+    activeControl: { backgroundColor: 'rgba(108,92,231,0.3)', borderColor: '#6C5CE7' },
+    controlIcon: { fontSize: 24, marginBottom: 2 },
+    controlLabel: { color: '#FFF', fontSize: 10, fontWeight: '700', opacity: 0.8 },
 });
