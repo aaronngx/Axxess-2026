@@ -84,8 +84,8 @@ def process_subjects(subject_ids):
             
     return all_subject_data
 
-# Process subjects 101 and 102 as requested
-subjects_to_process = ["101", "102"]
+# Process subjects 101, 102, and 103
+subjects_to_process = ["101", "102", "103"]
 all_data = process_subjects(subjects_to_process)
 
 with open('data.js', 'w') as f:
