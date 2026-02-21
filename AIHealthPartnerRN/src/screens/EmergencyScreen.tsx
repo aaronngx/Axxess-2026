@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  StatusBar, Alert, Linking
+  StatusBar, Alert, Linking, Modal, TextInput
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,8 +11,17 @@ import * as Haptics from 'expo-haptics';
 
 export const EmergencyScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
-  const [contacts] = useState<EmergencyContact[]>(getMockEmergencyContacts());
+  const [contacts, setContacts] = useState<EmergencyContact[]>(getMockEmergencyContacts());
   const [sosActive, setSosActive] = useState(false);
+
+  // Modal State
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [editingContact, setEditingContact] = useState<EmergencyContact | null>(null);
+
+  // Form State
+  const [name, setName] = useState('');
+  const [relationship, setRelationship] = useState('');
+  const [phone, setPhone] = useState('');
 
   const handleSOS = async () => {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -40,6 +49,60 @@ export const EmergencyScreen: React.FC = () => {
 
   const handleText = (contact: EmergencyContact) => {
     Linking.openURL(`sms:${contact.phone}?body=I need help. Please check on me. - Sent from AI Health Partner`);
+  };
+
+  const openAddModal = () => {
+    setEditingContact(null);
+    setName('');
+    setRelationship('');
+    setPhone('');
+    setIsModalVisible(true);
+  };
+
+  const openEditModal = (contact: EmergencyContact) => {
+    setEditingContact(contact);
+    setName(contact.name);
+    setRelationship(contact.relationship);
+    setPhone(contact.phone);
+    setIsModalVisible(true);
+  };
+
+  const saveContact = () => {
+    if (!name.trim() || !phone.trim()) {
+      Alert.alert('Error', 'Name and Phone are required');
+      return;
+    }
+
+    if (editingContact) {
+      // Edit
+      setContacts(prev => prev.map(c => c.id === editingContact.id ? { ...c, name, relationship, phone } : c));
+    } else {
+      // Add
+      const newContact: EmergencyContact = {
+        id: Date.now().toString(),
+        name,
+        relationship,
+        phone,
+      };
+      setContacts(prev => [...prev, newContact]);
+    }
+    setIsModalVisible(false);
+  };
+
+  const deleteContact = (id: string) => {
+    Alert.alert(
+      'Delete Contact',
+      'Are you sure you want to remove this contact?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete', style: 'destructive', onPress: () => {
+            setContacts(prev => prev.filter(c => c.id !== id));
+            setIsModalVisible(false);
+          }
+        },
+      ]
+    );
   };
 
   return (
@@ -76,10 +139,20 @@ export const EmergencyScreen: React.FC = () => {
         </TouchableOpacity>
 
         {/* Emergency Contacts */}
-        <Text style={styles.sectionTitle}>Your Emergency Contacts</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Your Emergency Contacts</Text>
+          <TouchableOpacity style={styles.addBtn} onPress={openAddModal}>
+            <Text style={styles.addBtnText}>+ Add</Text>
+          </TouchableOpacity>
+        </View>
 
         {contacts.map(contact => (
-          <View key={contact.id} style={styles.contactCard}>
+          <TouchableOpacity
+            key={contact.id}
+            style={styles.contactCard}
+            onPress={() => openEditModal(contact)}
+            activeOpacity={0.7}
+          >
             <View style={styles.contactAvatar}>
               <Text style={styles.contactInitial}>{contact.name[0]}</Text>
             </View>
@@ -96,8 +169,77 @@ export const EmergencyScreen: React.FC = () => {
                 <Text style={styles.actionIcon}>💬</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </TouchableOpacity>
         ))}
+
+        {/* Edit/Add Modal */}
+        <Modal
+          visible={isModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setIsModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <LinearGradient colors={['#1A1A2E', '#16213E']} style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>{editingContact ? 'Edit Contact' : 'Add New Contact'}</Text>
+                <TouchableOpacity onPress={() => setIsModalVisible(false)}>
+                  <Text style={styles.closeText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Full Name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="e.g. Sarah Johnson"
+                  placeholderTextColor="rgba(255,255,255,0.3)"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Relationship</Text>
+                <TextInput
+                  style={styles.input}
+                  value={relationship}
+                  onChangeText={setRelationship}
+                  placeholder="e.g. Spouse / Doctor"
+                  placeholderTextColor="rgba(255,255,255,0.3)"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Phone Number</Text>
+                <TextInput
+                  style={styles.input}
+                  value={phone}
+                  onChangeText={setPhone}
+                  placeholder="e.g. +1 (555) 000-0000"
+                  placeholderTextColor="rgba(255,255,255,0.3)"
+                  keyboardType="phone-pad"
+                />
+              </View>
+
+              <View style={styles.modalActions}>
+                {editingContact && (
+                  <TouchableOpacity
+                    style={styles.deleteBtn}
+                    onPress={() => deleteContact(editingContact.id)}
+                  >
+                    <Text style={styles.deleteBtnText}>Delete Contact</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity style={styles.saveBtn} onPress={saveContact}>
+                  <LinearGradient colors={['#6C5CE7', '#A29BFE']} style={styles.saveBtnGradient}>
+                    <Text style={styles.saveBtnText}>Save Contact</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            </LinearGradient>
+          </View>
+        </Modal>
 
         {/* Info card */}
         <View style={styles.infoCard}>
@@ -130,7 +272,22 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(231,76,60,0.35)',
   },
   call911Text: { fontSize: 18, fontWeight: '800', color: '#E74C3C' },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#FFFFFF', marginBottom: 14 },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14
+  },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
+  addBtn: {
+    backgroundColor: 'rgba(108,92,231,0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(108,92,231,0.4)',
+  },
+  addBtnText: { color: '#A29BFE', fontWeight: '700', fontSize: 13 },
   contactCard: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 20,
@@ -161,4 +318,45 @@ const styles = StyleSheet.create({
   },
   infoTitle: { fontSize: 15, fontWeight: '700', color: '#FFFFFF', marginBottom: 10 },
   infoText: { fontSize: 14, color: 'rgba(255,255,255,0.55)', lineHeight: 22 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    padding: 24,
+    paddingBottom: 40,
+    minHeight: '60%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  modalTitle: { fontSize: 22, fontWeight: '800', color: '#FFFFFF' },
+  closeText: { color: 'rgba(255,255,255,0.5)', fontSize: 16 },
+  inputGroup: { marginBottom: 18 },
+  inputLabel: { fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.5)', marginBottom: 8 },
+  input: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 14,
+    padding: 16,
+    color: '#FFFFFF',
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  modalActions: { marginTop: 10 },
+  saveBtn: { borderRadius: 18, overflow: 'hidden', marginTop: 12 },
+  saveBtnGradient: { paddingVertical: 16, alignItems: 'center' },
+  saveBtnText: { fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
+  deleteBtn: {
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  deleteBtnText: { color: '#FF4757', fontWeight: '600', fontSize: 14 },
 });

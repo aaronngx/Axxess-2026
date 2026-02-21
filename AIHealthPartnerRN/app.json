@@ -9,19 +9,19 @@
     "splash": {
       "backgroundColor": "#0A0A1A"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.axxess.aihealthpartner",
       "infoPlist": {
-        "NSHealthShareUsageDescription": "AI Health Partner reads your health data to provide real-time vitals monitoring and anomaly detection.",
-        "NSHealthUpdateUsageDescription": "AI Health Partner writes health data to help track your recovery progress."
-      },
-      "entitlements": {
-        "com.apple.developer.healthkit": true,
-        "com.apple.developer.healthkit.access": []
+        "NSMicrophoneUsageDescription": "This app needs access to your microphone for voice interaction with the AI chatbot.",
+        "NSSpeechRecognitionUsageDescription": "This app uses speech recognition to convert your voice to text."
       }
     },
-    "plugins": []
+    "plugins": [
+      "expo-av"
+    ]
   }
 }
