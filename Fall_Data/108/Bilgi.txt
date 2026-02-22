@@ -1,0 +1,7 @@
+Gender : Male
+Weight : 68 kg
+Height : 184 cm
+Age    : 21
+
+
+

@@ -1,0 +1,5 @@
+Gender : Female
+Weight : 60 kg
+Height : 165 cm
+Age    : 20
+

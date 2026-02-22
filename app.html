@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FallGuard - AI Safety</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --iphone-bg: #000;
+            --screen-bg: #1c1c1e;
+            --accent: #30d158;
+            --warning: #ff453a;
+            --text: #ffffff;
+        }
+
+        body {
+            background-color: #2c3e50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .phone {
+            width: 375px;
+            height: 812px;
+            background: var(--iphone-bg);
+            border-radius: 50px;
+            padding: 12px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            position: relative;
+            border: 4px solid #444;
+        }
+
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: var(--screen-bg);
+            border-radius: 40px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            color: var(--text);
+            position: relative;
+        }
+
+        .status-bar {
+            height: 44px;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 30px;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .app-body {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .logo h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            background: linear-gradient(to bottom, #fff, #888);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo p {
+            color: #8e8e93;
+            margin-top: 5px;
+        }
+
+        .subject-selector {
+            width: 100%;
+            margin: 15px 0;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .subject-btn {
+            padding: 8px 16px;
+            border-radius: 10px;
+            border: 1px solid #3a3a3c;
+            background: #1c1c1e;
+            color: #8e8e93;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .subject-btn.active {
+            background: #007aff;
+            color: #fff;
+            border-color: #007aff;
+        }
+
+        .sensor-rings {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid rgba(48, 209, 88, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .ring-1 {
+            width: 100px;
+            height: 100px;
+            animation: pulse 2s infinite;
+        }
+
+        .ring-2 {
+            width: 140px;
+            height: 140px;
+            animation: pulse 2s infinite 0.5s;
+        }
+
+        .ring-3 {
+            width: 180px;
+            height: 180px;
+            animation: pulse 2s infinite 1s;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.1;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 0.3;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 0.1;
+            }
+        }
+
+        .status-badge {
+            padding: 10px 20px;
+            border-radius: 20px;
+            background: rgba(48, 209, 88, 0.1);
+            color: var(--accent);
+            font-weight: 600;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .status-badge.alert {
+            background: rgba(255, 69, 58, 0.2);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+            animation: shake 0.5s infinite;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            75% {
+                transform: translateX(5px);
+            }
+        }
+
+        .controls {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-y: auto;
+            max-height: 280px;
+            padding-right: 5px;
+        }
+
+        .controls::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .controls::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 2px;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #8e8e93;
+            letter-spacing: 1px;
+            margin: 10px 0 5px 5px;
+            font-weight: 600;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            background: #3a3a3c;
+            color: #fff;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        button:active {
+            background: #48484a;
+        }
+
+        button.primary {
+            background: #007aff;
+        }
+
+        .alert-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--warning);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            text-align: center;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .alert-overlay.show {
+            transform: translateY(0);
+        }
+
+        .alert-overlay h2 {
+            font-size: 3rem;
+            margin-bottom: 0;
+        }
+
+        .alert-overlay p {
+            font-size: 1.2rem;
+            margin-top: 20px;
+            opacity: 0.9;
+        }
+
+        #graphContainer {
+            width: 100%;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.05);
+            margin-top: 10px;
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .bar {
+            flex: 1;
+            background: var(--accent);
+            margin: 0 1px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="phone">
+        <div class="screen">
+            <div class="status-bar">
+                <span>9:41</span>
+                <span>Cellular</span>
+            </div>
+
+            <div class="app-body">
+                <div class="logo">
+                    <h1>FallGuard</h1>
+                    <p>Intelligence-Driven Safety</p>
+                </div>
+
+                <div class="subject-selector">
+                    <button id="btn101" class="subject-btn active" onclick="setSubject('101')">Subject 101</button>
+                    <button id="btn102" class="subject-btn" onclick="setSubject('102')">Subject 102</button>
+                </div>
+
+                <div class="sensor-rings">
+                    <div class="ring ring-1"></div>
+                    <div class="ring ring-2"></div>
+                    <div class="ring ring-3"></div>
+                    <div id="liveStatus" class="status-badge">MONITORING S-101</div>
+                </div>
+
+                <div class="controls">
+                    <div class="section-title">Sequence Testing</div>
+                    <button onclick="simulateActivity(['816-YataktanKalkma', '801-Yurume Ileri'])">Rise & Walk
+                        (816+801)</button>
+                    <button onclick="simulateActivity(['801-Yurume Ileri', '901-OneDogruUzanma'])">Walk & Fall
+                        (801+901)</button>
+
+                    <div class="section-title">Individual Tests</div>
+                    <button onclick="simulateActivity('816-YataktanKalkma')">Normal Rising (816)</button>
+                    <button onclick="simulateActivity('801-Yurume Ileri')">Walking Forward (801)</button>
+                    <button class="primary" onclick="simulateActivity('917-YataktanDusme')">Bed Fall (917)</button>
+                </div>
+
+                <!-- Persistent Live Telemetry -->
+                <div id="graphContainer"></div>
+            </div>
+
+            <div id="alertOverlay" class="alert-overlay">
+                <h2>FALL DETECTED</h2>
+                <p>An impact was detected followed by a sustained change in body position.</p>
+                <div style="margin-top: 40px; font-weight: bold;">Emergency services will be notified in 10s</div>
+                <button onclick="dismissAlert()" style="margin-top: 60px; background: rgba(0,0,0,0.3)">I'M OKAY</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script>
+        let isProcessing = false;
+        let currentSubject = '101';
+        const liveStatus = document.getElementById('liveStatus');
+        const alertOverlay = document.getElementById('alertOverlay');
+        const graphContainer = document.getElementById('graphContainer');
+
+        function setSubject(sid) {
+            if (isProcessing) return;
+            currentSubject = sid;
+            document.getElementById('btn101').classList.toggle('active', sid === '101');
+            document.getElementById('btn102').classList.toggle('active', sid === '102');
+            dismissAlert();
+            liveStatus.textContent = `MONITORING S-${sid}`;
+        }
+
+        function simulateActivity(activityKeys) {
+            if (isProcessing) return;
+            isProcessing = true;
+            dismissAlert();
+
+            let dataSamples = [];
+            const subjectData = fallData[currentSubject];
+
+            if (Array.isArray(activityKeys)) {
+                activityKeys.forEach(key => {
+                    if (subjectData[key]) {
+                        dataSamples = dataSamples.concat(subjectData[key]["Waist"]);
+                    }
+                });
+                liveStatus.textContent = "SEQUENCE ACTIVE";
+            } else {
+                if (subjectData[activityKeys]) {
+                    dataSamples = subjectData[activityKeys]["Waist"];
+                }
+                liveStatus.textContent = "MONITORING";
+            }
+
+            if (dataSamples.length === 0) {
+                alert("Data for this activity/subject combination not found.");
+                isProcessing = false;
+                return;
+            }
+
+            let idx = 0;
+
+            // Detection State
+            let preImpactOrientation = null;
+            let impactDetected = false;
+            let impactTimeStep = 0;
+
+            const timer = setInterval(() => {
+                const sample = dataSamples[idx];
+                if (!sample || idx >= dataSamples.length) {
+                    clearInterval(timer);
+                    isProcessing = false;
+                    liveStatus.textContent = `MONITORING S-${currentSubject}`;
+                    liveStatus.classList.remove('alert');
+                    return;
+                }
+
+                // Calculate Total Acceleration Magnitude
+                const totalAcc = Math.sqrt(sample.acc_x ** 2 + sample.acc_y ** 2 + sample.acc_z ** 2);
+
+                // Update Graph
+                updateGraph(totalAcc);
+
+                // LOGIC: Impact Detection
+                // Threshold 20 m/s^2 based on 917 data (reaches 25+)
+                if (totalAcc > 20 && !impactDetected) {
+                    impactDetected = true;
+                    impactTimeStep = idx;
+                    liveStatus.textContent = "IMPACT DETECTED";
+                    liveStatus.classList.add('alert');
+
+                    // Capture orientation before this specific burst (approx 20 samples back)
+                    const preIdx = Math.max(0, idx - 20);
+                    preImpactOrientation = dataSamples[preIdx];
+                }
+
+                // LOGIC: Post-Impact Analysis
+                if (impactDetected && idx > impactTimeStep + 40) {
+                    if (!preImpactOrientation) {
+                        impactDetected = false;
+                        return;
+                    }
+                    // Check if orientation has fundamentally changed (Roll or Pitch delta > 60 deg)
+                    const angleDelta = Math.max(
+                        Math.abs(sample.roll - preImpactOrientation.roll),
+                        Math.abs(sample.pitch - preImpactOrientation.pitch)
+                    );
+
+                    // If they stay still for a bit (low acceleration variance) but at a new angle
+                    // For walking/rising, angleDelta might change but won't satisfy the "impact + static lie" profile
+                    if (angleDelta > 60) {
+                        triggerAlert();
+                        clearInterval(timer);
+                    } else {
+                        // Recovery? User recovered or movement was normal
+                        impactDetected = false;
+                        liveStatus.textContent = Array.isArray(activityKeys) ? "SEQUENCE ACTIVE" : `MONITORING S-${currentSubject}`;
+                        liveStatus.classList.remove('alert');
+                    }
+                }
+
+                idx++;
+            }, 50);
+        }
+
+        function updateGraph(val) {
+            const bar = document.createElement('div');
+            bar.className = 'bar';
+            bar.style.height = `${Math.min(100, (val / 30) * 100)}%`;
+            graphContainer.appendChild(bar);
+            if (graphContainer.children.length > 80) {
+                graphContainer.removeChild(graphContainer.firstChild);
+            }
+        }
+
+        function triggerAlert() {
+            alertOverlay.classList.add('show');
+            liveStatus.textContent = "FALL VERIFIED";
+        }
+
+        function dismissAlert() {
+            alertOverlay.classList.remove('show');
+            isProcessing = false;
+            liveStatus.textContent = `MONITORING S-${currentSubject}`;
+            liveStatus.classList.remove('alert');
+        }
+    </script>
+</body>
+
+</html>

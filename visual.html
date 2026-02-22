@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fall Data Visualization - Subject 101, Test 801</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text: #f8fafc;
+            --text-secondary: #94a3b8;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .tabs-container {
+            width: 100%;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary) transparent;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            white-space: nowrap;
+            min-width: max-content;
+            padding: 5px;
+        }
+
+        .tab {
+            padding: 8px 20px;
+            background: var(--card-bg);
+            border: 1px solid #334155;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        label {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+        }
+
+        select {
+            background: var(--card-bg);
+            color: var(--text);
+            border: 1px solid #334155;
+            padding: 8px 16px;
+            border-radius: 8px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 1.25rem;
+            color: #818cf8;
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 300px !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Fall Data Analytics</h1>
+            <p id="activitySubtitle" style="color: var(--text-secondary)">Subject 101 | Multi-Action Dashboard | Trial 1
+            </p>
+        </header>
+
+        <div class="tabs-container">
+            <div class="tabs" id="activityTabs">
+                <!-- Tabs populated by JS -->
+            </div>
+        </div>
+
+        <div class="controls">
+            <div>
+                <label for="sensorSelect">Sensor Location:</label>
+                <select id="sensorSelect">
+                    <!-- Options populated by JS -->
+                </select>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h2>Accelerometer (m/s²)</h2>
+                <canvas id="accChart"></canvas>
+            </div>
+            <div class="card">
+                <h2>Velocity Increments</h2>
+                <canvas id="velChart"></canvas>
+            </div>
+            <div class="card">
+                <h2>Gyroscope (rad/s)</h2>
+                <canvas id="gyrChart"></canvas>
+            </div>
+            <div class="card">
+                <h2>Orientation (Euler Angles)</h2>
+                <canvas id="oriChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script>
+        const sensorSelect = document.getElementById('sensorSelect');
+        const activityTabs = document.getElementById('activityTabs');
+        const activitySubtitle = document.getElementById('activitySubtitle');
+
+        const activityKeys = Object.keys(fallData).sort();
+        let currentActivity = activityKeys[0];
+        let currentSensor = '';
+        let accChart, velChart, gyrChart, oriChart;
+
+        // Initialize Activity Tabs
+        activityKeys.forEach(key => {
+            const div = document.createElement('div');
+            div.className = `tab ${key === currentActivity ? 'active' : ''}`;
+            div.dataset.activity = key;
+            div.textContent = key;
+            div.onclick = () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                div.classList.add('active');
+                currentActivity = key;
+                updateCharts();
+            };
+            activityTabs.appendChild(div);
+        });
+
+        // Initialize Sensor Select (from first activity)
+        const sensorNames = Object.keys(fallData[currentActivity]);
+        currentSensor = sensorNames[0];
+        sensorNames.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            sensorSelect.appendChild(option);
+        });
+
+        function createChart(id) {
+            const ctx = document.getElementById(id).getContext('2d');
+            return new Chart(ctx, {
+                type: 'line',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 300 },
+                    elements: { point: { radius: 0 }, line: { borderWidth: 2 } },
+                    scales: {
+                        x: { display: true, grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#64748b' } },
+                        y: { display: true, grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#64748b' } }
+                    },
+                    plugins: { legend: { labels: { color: '#94a3b8' } } }
+                }
+            });
+        }
+
+        function updateCharts() {
+            const data = fallData[currentActivity][currentSensor];
+            if (!data) return;
+            const labels = data.map((_, i) => i);
+            activitySubtitle.textContent = `Subject 101 | ${currentActivity} | ${currentSensor} Sensor`;
+
+            // Accelerometer
+            accChart.data.labels = labels;
+            accChart.data.datasets = [
+                { label: 'X', data: data.map(d => d.acc_x), borderColor: '#f87171', fill: false },
+                { label: 'Y', data: data.map(d => d.acc_y), borderColor: '#4adede', fill: false },
+                { label: 'Z', data: data.map(d => d.acc_z), borderColor: '#fbbf24', fill: false }
+            ];
+            accChart.update();
+
+            // Velocity
+            velChart.data.labels = labels;
+            velChart.data.datasets = [
+                { label: 'X', data: data.map(d => d.vel_inc_x), borderColor: '#f87171', fill: false },
+                { label: 'Y', data: data.map(d => d.vel_inc_y), borderColor: '#4adede', fill: false },
+                { label: 'Z', data: data.map(d => d.vel_inc_z), borderColor: '#fbbf24', fill: false }
+            ];
+            velChart.update();
+
+            // Gyroscope
+            gyrChart.data.labels = labels;
+            gyrChart.data.datasets = [
+                { label: 'X', data: data.map(d => d.gyr_x), borderColor: '#f87171', fill: false },
+                { label: 'Y', data: data.map(d => d.gyr_y), borderColor: '#4adede', fill: false },
+                { label: 'Z', data: data.map(d => d.gyr_z), borderColor: '#fbbf24', fill: false }
+            ];
+            gyrChart.update();
+
+            // Orientation
+            oriChart.data.labels = labels;
+            oriChart.data.datasets = [
+                { label: 'Roll', data: data.map(d => d.roll), borderColor: '#f87171', fill: false },
+                { label: 'Pitch', data: data.map(d => d.pitch), borderColor: '#4adede', fill: false },
+                { label: 'Yaw', data: data.map(d => d.yaw), borderColor: '#fbbf24', fill: false }
+            ];
+            oriChart.update();
+        }
+
+        sensorSelect.onchange = (e) => { currentSensor = e.target.value; updateCharts(); };
+
+        accChart = createChart('accChart');
+        velChart = createChart('velChart');
+        gyrChart = createChart('gyrChart');
+        oriChart = createChart('oriChart');
+        updateCharts();
+    </script>
+</body>
+
+</html>

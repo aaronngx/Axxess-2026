@@ -1,0 +1,5 @@
+// Start Time: 0
+// Update Rate: 25.0Hz
+// Scenario: 34.3
+// Firmware Version: 1.0.9
+Counter	Temperature	VelInc_X	VelInc_Y	VelInc_Z	OriInc_w	OriInc_x	OriInc_y	OriInc_z	Acc_X	Acc_Y	Acc_Z	Gyr_X	Gyr_Y	Gyr_Z	Mag_X	Mag_Y	Mag_Z	Pressure	Roll	Pitch	Yaw	RSSI	
