@@ -1,5 +1,5 @@
 // src/features/eye/screens/EyePdLock.tsx — Phase 3
-// PD measurement: population average | manual entry | MediaPipe camera pipeline (web).
+// PD measurement: population average | manual entry | MediaPipe (web) | touch-mark (native).
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -7,7 +7,7 @@ import {
   TextInput, Image, Dimensions, Platform, Alert,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import Svg, { Circle, Line } from 'react-native-svg';
+import Svg, { Circle, Ellipse, Line } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEyeSession } from '../EyeSessionContext';
@@ -29,6 +29,8 @@ const DISPLAY_H = Math.round(DISPLAY_W * 0.75); // 4:3
 
 type Mode          = 'default' | 'manual' | 'measure';
 type MeasureState  = 'idle' | 'initialising' | 'capturing' | 'qc';
+// Android touch-mark steps: take photo → tap left pupil → right pupil → iris L edge → iris R edge → result
+type AndroidStep   = 'camera' | 'left-pupil' | 'right-pupil' | 'iris-left' | 'iris-right' | 'result';
 
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
@@ -53,6 +55,17 @@ export const EyePdLock: React.FC = () => {
   const [bestFrameUri,    setBestFrameUri]    = useState<string | null>(null);
   const [captureResult,   setCaptureResult]   = useState<WebPdResult | null>(null);
   const [debugOpen,       setDebugOpen]       = useState(false);
+
+  // Android touch-mark sub-flow
+  const [androidStep,    setAndroidStep]    = useState<AndroidStep>('camera');
+  const [androidPhotoUri, setAndroidPhotoUri] = useState<string | null>(null);
+  const [androidPD,      setAndroidPD]      = useState<number | null>(null);
+  const [pts, setPts] = useState<{
+    lp: { x: number; y: number } | null; // left pupil
+    rp: { x: number; y: number } | null; // right pupil
+    il: { x: number; y: number } | null; // iris left edge
+    ir: { x: number; y: number } | null; // iris right edge
+  }>({ lp: null, rp: null, il: null, ir: null });
 
   // Pre-warm MediaPipe as soon as Measure tab is selected (web only)
   useEffect(() => {
@@ -97,6 +110,11 @@ export const EyePdLock: React.FC = () => {
     setCaptureProgress(0);
     setBestFrameUri(null);
     setCaptureResult(null);
+    // Android touch-mark reset
+    setAndroidStep('camera');
+    setAndroidPhotoUri(null);
+    setAndroidPD(null);
+    setPts({ lp: null, rp: null, il: null, ir: null });
   };
 
   const startCapture = useCallback(async () => {
@@ -158,6 +176,56 @@ export const EyePdLock: React.FC = () => {
     setCaptureResult(result);
     setMeasureState('qc');
   }, [permission, requestPermission, loadStatus]);
+
+  // ── Android: take photo ────────────────────────────────────────────────────
+  const takeAndroidPhoto = useCallback(async () => {
+    if (permission && !permission.granted) {
+      const res = await requestPermission();
+      if (!res.granted) {
+        Alert.alert('Camera needed', 'Grant camera access to measure PD.');
+        return;
+      }
+    }
+    try {
+      const photo = await (cameraRef.current as any).takePictureAsync({ quality: 0.85, skipProcessing: true });
+      setAndroidPhotoUri(photo.uri);
+      setAndroidStep('left-pupil');
+    } catch {
+      Alert.alert('Failed to take photo', 'Try again.');
+    }
+  }, [permission, requestPermission]);
+
+  // ── Android: handle tap on photo — 4-step marking sequence ────────────────
+  // Uses iris diameter = 12 mm (Calossi 2007) as scale reference.
+  const handleImageTap = useCallback((evt: any) => {
+    const x = evt.nativeEvent.locationX;
+    const y = evt.nativeEvent.locationY;
+
+    if (androidStep === 'left-pupil') {
+      setPts(p => ({ ...p, lp: { x, y } }));
+      setAndroidStep('right-pupil');
+    } else if (androidStep === 'right-pupil') {
+      setPts(p => ({ ...p, rp: { x, y } }));
+      setAndroidStep('iris-left');
+    } else if (androidStep === 'iris-left') {
+      setPts(p => ({ ...p, il: { x, y } }));
+      setAndroidStep('iris-right');
+    } else if (androidStep === 'iris-right') {
+      setPts(prev => {
+        const ir = { x, y };
+        const { lp, rp, il } = prev;
+        if (!lp || !rp || !il) return prev;
+        const irisWidthPx = Math.sqrt((ir.x - il.x) ** 2 + (ir.y - il.y) ** 2);
+        if (irisWidthPx < 4) return prev; // bad tap
+        const mmPerPx = 12.0 / irisWidthPx;
+        const pdPx    = Math.sqrt((rp.x - lp.x) ** 2 + (rp.y - lp.y) ** 2);
+        const pd      = Math.round(pdPx * mmPerPx * 10) / 10;
+        setAndroidPD(pd);
+        setAndroidStep('result');
+        return { ...prev, ir };
+      });
+    }
+  }, [androidStep]);
 
   // ── Render helpers ─────────────────────────────────────────────────────────
 
@@ -229,15 +297,149 @@ export const EyePdLock: React.FC = () => {
     </View>
   );
 
-  const renderMeasureNative = () => (
-    <View style={styles.pdBox}>
-      <Text style={[styles.pdIcon, { fontSize: 36 }]}>📱</Text>
-      <Text style={styles.nativeNotice}>
-        Camera PD measurement requires a native dev build with ARKit.{'\n'}
-        Use Average or Enter your prescription PD for now.
-      </Text>
-    </View>
-  );
+  // ── Android: touch-mark PD measurement ────────────────────────────────────
+
+  const ANDROID_STEP_LABEL: Record<AndroidStep, string> = {
+    'camera':      '',
+    'left-pupil':  '1 / 4  ·  Tap the CENTER of your LEFT pupil',
+    'right-pupil': '2 / 4  ·  Tap the CENTER of your RIGHT pupil',
+    'iris-left':   '3 / 4  ·  Tap the LEFT EDGE of your left iris (colored ring)',
+    'iris-right':  '4 / 4  ·  Tap the RIGHT EDGE of your left iris',
+    'result':      '',
+  };
+
+  const resetAndroid = () => {
+    setAndroidStep('camera');
+    setAndroidPhotoUri(null);
+    setAndroidPD(null);
+    setPts({ lp: null, rp: null, il: null, ir: null });
+  };
+
+  const renderMeasureAndroid = () => {
+    // ── Step 0: camera viewfinder ───────────────────────────────────────────
+    if (androidStep === 'camera') {
+      return (
+        <>
+          <View style={[styles.cameraContainer, { width: DISPLAY_W, height: DISPLAY_H }]}>
+            <CameraView ref={cameraRef} style={styles.camera} facing="front" />
+            <Svg style={StyleSheet.absoluteFill} width={DISPLAY_W} height={DISPLAY_H} pointerEvents="none">
+              <Ellipse
+                cx={DISPLAY_W / 2} cy={DISPLAY_H * 0.46}
+                rx={DISPLAY_W * 0.26} ry={DISPLAY_H * 0.38}
+                stroke="rgba(162,155,254,0.55)" strokeWidth={2}
+                fill="none" strokeDasharray="6 4"
+              />
+            </Svg>
+            <View style={styles.cameraOverlay} pointerEvents="none">
+              <Text style={styles.cameraHint}>
+                Hold phone at arm's length · Centre face in the oval
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity style={styles.captureBtn} onPress={takeAndroidPhoto}>
+            <Text style={styles.captureBtnText}>📷  Take Photo</Text>
+          </TouchableOpacity>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTitle}>How it works (4 taps)</Text>
+            <Text style={styles.infoText}>
+              Take a selfie → tap left pupil → right pupil → two edges of one iris.
+              App uses 12 mm iris diameter (clinical standard) to convert pixels → mm.
+            </Text>
+          </View>
+        </>
+      );
+    }
+
+    // ── Result ───────────────────────────────────────────────────────────────
+    if (androidStep === 'result') {
+      const pdOk = androidPD !== null && androidPD >= MIN_PD && androidPD <= MAX_PD;
+      return (
+        <>
+          <View style={[styles.qcImageWrap, { width: DISPLAY_W, height: DISPLAY_H }]}>
+            {androidPhotoUri && (
+              <Image
+                source={{ uri: androidPhotoUri }}
+                style={{ width: DISPLAY_W, height: DISPLAY_H, borderRadius: 12 }}
+                resizeMode="cover"
+              />
+            )}
+            <Svg style={StyleSheet.absoluteFill} width={DISPLAY_W} height={DISPLAY_H} pointerEvents="none">
+              {pts.lp && <Circle cx={pts.lp.x} cy={pts.lp.y} r={9} fill="rgba(46,204,113,0.85)" />}
+              {pts.rp && <Circle cx={pts.rp.x} cy={pts.rp.y} r={9} fill="rgba(46,204,113,0.85)" />}
+              {pts.lp && pts.rp && (
+                <Line
+                  x1={pts.lp.x} y1={pts.lp.y} x2={pts.rp.x} y2={pts.rp.y}
+                  stroke="rgba(162,155,254,0.65)" strokeWidth={1.5} strokeDasharray="5 4"
+                />
+              )}
+              {pts.il && pts.ir && (
+                <Line
+                  x1={pts.il.x} y1={pts.il.y} x2={pts.ir.x} y2={pts.ir.y}
+                  stroke="rgba(253,203,110,0.7)" strokeWidth={1.5}
+                />
+              )}
+            </Svg>
+          </View>
+          <View style={styles.qcResult}>
+            <Text style={styles.qcPd}>PD ≈ {androidPD} mm</Text>
+            <Text style={[styles.qcConf, { color: pdOk ? '#2ECC71' : '#FF4757' }]}>
+              {pdOk ? 'Within typical adult range (52–74 mm)' : 'Outside range — please retake'}
+            </Text>
+          </View>
+          <View style={styles.qcBtnRow}>
+            <TouchableOpacity style={styles.retakeBtn} onPress={resetAndroid}>
+              <Text style={styles.retakeBtnText}>Retake</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.lockBtn, { flex: 1 }, !pdOk && styles.lockBtnDim]}
+              disabled={!pdOk}
+              onPress={() => handleLock(androidPD!, 0.80)}
+            >
+              <Text style={styles.lockBtnText}>Save & Lock →</Text>
+            </TouchableOpacity>
+          </View>
+          {locked && (
+            <View style={styles.lockedRow}>
+              <Text style={styles.lockedText}>✓ PD locked: {androidPD} mm</Text>
+            </View>
+          )}
+        </>
+      );
+    }
+
+    // ── Touch-mark steps 1–4 ─────────────────────────────────────────────────
+    const dotColor = (androidStep === 'left-pupil' || androidStep === 'right-pupil')
+      ? '#2ECC71' : '#FDCB6E';
+    return (
+      <>
+        <View style={styles.stepBanner}>
+          <Text style={styles.stepBannerText}>{ANDROID_STEP_LABEL[androidStep]}</Text>
+        </View>
+        <TouchableOpacity
+          activeOpacity={0.95}
+          style={[styles.qcImageWrap, { width: DISPLAY_W, height: DISPLAY_H }]}
+          onPress={handleImageTap}
+        >
+          {androidPhotoUri && (
+            <Image
+              source={{ uri: androidPhotoUri }}
+              style={{ width: DISPLAY_W, height: DISPLAY_H, borderRadius: 12 }}
+              resizeMode="cover"
+            />
+          )}
+          <Svg style={StyleSheet.absoluteFill} width={DISPLAY_W} height={DISPLAY_H} pointerEvents="none">
+            {pts.lp && <Circle cx={pts.lp.x} cy={pts.lp.y} r={9} fill="rgba(46,204,113,0.85)" />}
+            {pts.rp && <Circle cx={pts.rp.x} cy={pts.rp.y} r={9} fill="rgba(46,204,113,0.85)" />}
+            {pts.il && <Circle cx={pts.il.x} cy={pts.il.y} r={6} fill="rgba(253,203,110,0.85)" />}
+          </Svg>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.retakeBtn, { marginTop: 10 }]} onPress={resetAndroid}>
+          <Text style={styles.retakeBtnText}>← Start Over</Text>
+        </TouchableOpacity>
+        <Text style={styles.tapHint}>Tap directly on the point described above</Text>
+      </>
+    );
+  };
 
   const renderMeasureIdle = () => (
     <>
@@ -382,11 +584,14 @@ export const EyePdLock: React.FC = () => {
   };
 
   const renderMeasure = () => {
-    if (Platform.OS !== 'web') return renderMeasureNative();
-    if (measureState === 'qc')                          return renderMeasureQC();
-    if (measureState === 'capturing' ||
-        measureState === 'initialising')                 return renderMeasureCapturing();
-    return renderMeasureIdle();
+    if (Platform.OS === 'web') {
+      if (measureState === 'qc')                        return renderMeasureQC();
+      if (measureState === 'capturing' ||
+          measureState === 'initialising')              return renderMeasureCapturing();
+      return renderMeasureIdle();
+    }
+    // Native (Android / iOS): touch-mark approach
+    return renderMeasureAndroid();
   };
 
   // ── Main render ────────────────────────────────────────────────────────────
@@ -524,6 +729,10 @@ const styles = StyleSheet.create({
   debugToggleText: { fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: '600' },
   debugBox:        { backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: 12, marginBottom: 16 },
   debugText:       { fontSize: 11, color: 'rgba(162,155,254,0.7)', fontFamily: 'monospace' },
+
+  stepBanner:     { backgroundColor: 'rgba(108,92,231,0.2)', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 10, borderWidth: 1, borderColor: 'rgba(108,92,231,0.35)', alignSelf: 'stretch' },
+  stepBannerText: { fontSize: 13, color: '#A29BFE', fontWeight: '700', textAlign: 'center' },
+  tapHint:        { fontSize: 12, color: 'rgba(255,255,255,0.35)', textAlign: 'center', marginTop: 6 },
 
   nextBtn:     { backgroundColor: '#6C5CE7', borderRadius: 16, padding: 18, alignItems: 'center' },
   nextBtnDim:  { backgroundColor: 'rgba(108,92,231,0.3)' },
