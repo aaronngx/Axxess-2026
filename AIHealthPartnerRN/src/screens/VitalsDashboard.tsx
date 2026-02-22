@@ -9,6 +9,8 @@ import { useHealthData } from '../hooks/useHealthData';
 import { VitalsCard } from '../components/VitalsCard';
 import { AnomalyBanner } from '../components/AnomalyBanner';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { eyeStorage } from '../features/eye/storage/eyeStorage';
 
 const { width } = Dimensions.get('window');
 
@@ -16,6 +18,9 @@ export const VitalsDashboard: React.FC = () => {
   const health = useHealthData();
   const [anomalyDismissed, setAnomalyDismissed] = useState(false);
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
+
+  const lastEyeSession = eyeStorage.getAllSessionsSync()[0] ?? null;
 
   const chartData = {
     labels: [],
@@ -122,6 +127,39 @@ export const VitalsDashboard: React.FC = () => {
           )}
         </View>
 
+        {/* Eye Vision Check card */}
+        <TouchableOpacity
+          style={styles.eyeCard}
+          onPress={() => navigation.navigate('EyeSafetyGate')}
+          activeOpacity={0.85}
+        >
+          <LinearGradient
+            colors={['rgba(108,92,231,0.18)', 'rgba(162,155,254,0.08)']}
+            style={StyleSheet.absoluteFill}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          />
+          <View style={styles.eyeCardLeft}>
+            <Text style={styles.eyeCardIcon}>👁</Text>
+            <View>
+              <Text style={styles.eyeCardTitle}>Eye Vision Check</Text>
+              {lastEyeSession ? (
+                <Text style={styles.eyeCardMeta}>
+                  Last: {new Date(lastEyeSession.created_at).toLocaleDateString()} ·{' '}
+                  <Text style={{ color: lastEyeSession.quality.quality_label === 'High' ? '#2ECC71' : '#FDCB6E' }}>
+                    {lastEyeSession.quality.quality_label}
+                  </Text>
+                </Text>
+              ) : (
+                <Text style={styles.eyeCardMeta}>No previous runs</Text>
+              )}
+            </View>
+          </View>
+          <View style={styles.eyeStartBtn}>
+            <Text style={styles.eyeStartBtnText}>Start →</Text>
+          </View>
+        </TouchableOpacity>
+
         {/* Health tip */}
         <View style={styles.tipCard}>
           <Text style={styles.tipIcon}>💡</Text>
@@ -164,4 +202,19 @@ const styles = StyleSheet.create({
   tipIcon: { fontSize: 24, marginRight: 14 },
   tipTitle: { fontSize: 14, fontWeight: '700', color: '#A29BFE', marginBottom: 4 },
   tipText: { fontSize: 14, color: 'rgba(255,255,255,0.65)', lineHeight: 20 },
+  eyeCard: {
+    flexDirection: 'row', alignItems: 'center',
+    borderRadius: 20, padding: 18, marginTop: 16,
+    borderWidth: 1, borderColor: 'rgba(108,92,231,0.3)',
+    overflow: 'hidden',
+  },
+  eyeCardLeft: { flex: 1, flexDirection: 'row', alignItems: 'center' },
+  eyeCardIcon: { fontSize: 28, marginRight: 14 },
+  eyeCardTitle: { fontSize: 15, fontWeight: '700', color: '#FFFFFF', marginBottom: 3 },
+  eyeCardMeta: { fontSize: 12, color: 'rgba(255,255,255,0.45)' },
+  eyeStartBtn: {
+    backgroundColor: '#6C5CE7', borderRadius: 12,
+    paddingHorizontal: 14, paddingVertical: 8,
+  },
+  eyeStartBtnText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
 });
