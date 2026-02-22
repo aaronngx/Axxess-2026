@@ -73,6 +73,7 @@ export const EyeContrast: React.FC = () => {
         </View>
         <Text style={styles.title}>Contrast Vision</Text>
         <Text style={styles.desc}>Both eyes open. Which way does the E point?</Text>
+        <Text style={styles.shortTest}>Short test — 10 to 15 seconds</Text>
 
         <View style={styles.progressBg}>
           <View style={[styles.progressFill, { width: `${progress}%` }]} />
@@ -160,6 +161,7 @@ const styles = StyleSheet.create({
   desc: { fontSize: 14, color: 'rgba(255,255,255,0.5)', lineHeight: 20, marginBottom: 16 },
   progressBg: { height: 3, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', marginBottom: 6 },
   progressFill: { height: '100%', backgroundColor: '#A29BFE', borderRadius: 2 },
+  shortTest: { fontSize: 12, color: 'rgba(162,155,254,0.7)', marginBottom: 12, fontWeight: '600' },
   progressLabel: { fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20, fontFamily: 'monospace' },
   optoArea: { alignItems: 'center', marginBottom: 16 },
   optoBg: {

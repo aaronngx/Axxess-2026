@@ -9,7 +9,7 @@ import { useEyeSession } from '../EyeSessionContext';
 import { ContrastE, randomDirection, DIR_ARROW, E_DIRECTIONS, EDirection } from '../engine/stimuli';
 import { createStaircaseState, updateStaircase, LOGMAR_LEVELS } from '../engine/staircase';
 
-type Step = 'gate' | 'staircase' | 'done';
+type Step = 'staircase' | 'done';
 
 const contrastFromLevel = (idx: number): number => {
   const LEVELS = [0.05, 0.08, 0.12, 0.18, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.82, 0.88, 0.93, 0.97];
@@ -21,7 +21,7 @@ export const EyeLowLight: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { session, updateSession } = useEyeSession();
 
-  const [step, setStep] = useState<Step>('gate');
+  const [step, setStep] = useState<Step>('staircase');
   const [sc, setSc] = useState(createStaircaseState);
   const [direction, setDirection] = useState<EDirection>(randomDirection);
   const [responded, setResponded] = useState(false);
@@ -71,31 +71,17 @@ export const EyeLowLight: React.FC = () => {
           <Text style={styles.phaseText}>STEP 9 OF 11 · LOW-LIGHT VISION</Text>
         </View>
 
-        {/* ── Gate ── */}
-        {step === 'gate' && (
-          <>
-            <Text style={styles.title}>Dim Your Room</Text>
-            <Text style={styles.desc}>
-              Turn off or dim overhead lights. The test measures how well your eyes
-              adapt to low-light conditions (mesopic vision).
-            </Text>
-            <View style={styles.gateCard}>
-              <Text style={styles.gateIcon}>🌙</Text>
-              <Text style={styles.gateText}>
-                Room should be dim — not completely dark. Like a restaurant at night.
-              </Text>
-            </View>
-            <TouchableOpacity style={styles.nextBtn} onPress={() => setStep('staircase')}>
-              <Text style={styles.nextBtnText}>Room Is Dim — Start Test →</Text>
-            </TouchableOpacity>
-          </>
-        )}
-
         {/* ── Low-light staircase ── */}
         {step === 'staircase' && (
           <>
-            <Text style={styles.title}>Low-Light Acuity</Text>
-            <Text style={styles.desc}>Same test — dim lighting. Which way does the E point?</Text>
+            <Text style={styles.title}>Low-Light Vision</Text>
+            <Text style={styles.desc}>Which way does the E point?</Text>
+            <View style={styles.simCard}>
+              <Text style={styles.simIcon}>🌙</Text>
+              <Text style={styles.simText}>
+                Low-light simulated on-screen — no need to dim your room.
+              </Text>
+            </View>
 
             <View style={styles.progressBg}>
               <View style={[styles.progressFill, { width: `${progress}%` }]} />
@@ -174,13 +160,13 @@ const styles = StyleSheet.create({
   phaseText: { fontSize: 11, color: '#A29BFE', fontWeight: '700', letterSpacing: 1 },
   title: { fontSize: 26, fontWeight: '800', color: '#FFFFFF', marginBottom: 8 },
   desc: { fontSize: 14, color: 'rgba(255,255,255,0.5)', lineHeight: 20, marginBottom: 20 },
-  gateCard: {
-    backgroundColor: 'rgba(162,155,254,0.07)', borderRadius: 20,
-    padding: 24, alignItems: 'center', marginBottom: 24,
+  simCard: {
+    backgroundColor: 'rgba(162,155,254,0.07)', borderRadius: 16,
+    padding: 14, flexDirection: 'row', alignItems: 'center', marginBottom: 16,
     borderWidth: 1, borderColor: 'rgba(162,155,254,0.15)',
   },
-  gateIcon: { fontSize: 44, marginBottom: 14 },
-  gateText: { fontSize: 14, color: 'rgba(255,255,255,0.6)', textAlign: 'center', lineHeight: 21 },
+  simIcon: { fontSize: 22, marginRight: 12 },
+  simText: { flex: 1, fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 19 },
   progressBg: { height: 3, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', marginBottom: 6 },
   progressFill: { height: '100%', backgroundColor: '#A29BFE', borderRadius: 2 },
   progressLabel: { fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20, fontFamily: 'monospace' },

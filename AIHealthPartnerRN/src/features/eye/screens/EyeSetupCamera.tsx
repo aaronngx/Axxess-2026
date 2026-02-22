@@ -57,8 +57,9 @@ export const EyeSetupCamera: React.FC = () => {
     setReady(true);
   }, []);
 
-  // Request camera permission
+  // Request camera permission (native only)
   useEffect(() => {
+    if (IS_WEB) return;
     if (permission && !permission.granted) {
       requestPermission();
     }
@@ -126,6 +127,35 @@ export const EyeSetupCamera: React.FC = () => {
 
   const progressPct = Math.min(100, (stableMs / STABLE_DURATION) * 100);
 
+  // Web: skip all camera/permission logic entirely
+  if (IS_WEB) {
+    return (
+      <View style={[styles.root, { paddingTop: insets.top }]}>
+        <View style={[styles.topLabel, { top: insets.top + 16 }]} pointerEvents="none">
+          <View style={styles.phaseTag}>
+            <Text style={styles.phaseText}>STEP 2 OF 11 · CAMERA SETUP</Text>
+          </View>
+          <Text style={styles.title}>Position yourself</Text>
+          <Text style={styles.subtitle}>~40 cm away · arm's length from screen</Text>
+        </View>
+        <View style={[styles.bottomPanel, { paddingBottom: insets.bottom + 16, position: 'absolute', bottom: 0, left: 0, right: 0 }]}>
+          <View style={styles.webBypassBox}>
+            <Text style={styles.webBypassIcon}>🖥️</Text>
+            <Text style={styles.webBypassText}>
+              Web mode — camera unavailable.{'\n'}Sit ~40 cm (arm's length) from your screen.{'\n'}Tip: a credit card is 8.5 cm wide — use it as a size reference.
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.nextBtn}
+            onPress={() => navigation.navigate('EyePdLock')}
+          >
+            <Text style={styles.nextBtnText}>Continue →</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   if (!permission) return <View style={styles.root} />;
 
   if (!permission.granted) {
@@ -173,7 +203,8 @@ export const EyeSetupCamera: React.FC = () => {
           <Text style={styles.phaseText}>STEP 2 OF 11 · CAMERA SETUP</Text>
         </View>
         <Text style={styles.title}>Position your face</Text>
-        <Text style={styles.subtitle}>Align your face in the oval and hold still</Text>
+        <Text style={styles.subtitle}>~40 cm away (arm's length) · Face in oval</Text>
+        <Text style={styles.distanceTip}>Tip: a credit card (8.5 cm) at arm's length = size reference</Text>
       </View>
 
       {/* Bottom panel */}
@@ -242,6 +273,7 @@ const styles = StyleSheet.create({
   phaseText: { fontSize: 11, color: '#A29BFE', fontWeight: '700', letterSpacing: 1 },
   title: { fontSize: 26, fontWeight: '800', color: '#FFFFFF', marginBottom: 4 },
   subtitle: { fontSize: 14, color: 'rgba(255,255,255,0.6)' },
+  distanceTip: { fontSize: 11, color: 'rgba(162,155,254,0.7)', marginTop: 5 },
   bottomPanel: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     backgroundColor: 'rgba(10,10,26,0.92)',

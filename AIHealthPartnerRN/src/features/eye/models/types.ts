@@ -108,7 +108,6 @@ export interface EyeSessionResult {
 export type RootStackParamList = {
   Tabs: undefined;
   // Eye Vision Screening
-  EyeSafetyGate: undefined;
   EyeSetupCamera: undefined;
   EyePdLock: undefined;
   EyeFarTest: { eye: EyeSide; run: 1 | 2 };

@@ -6,8 +6,8 @@
 const FEATHERLESS_BASE = 'https://api.featherless.ai/v1';
 const MODEL = 'meta-llama/Meta-Llama-3.1-8B-Instruct';
 
-// Set your API key here. Leave empty to always use offline fallback.
-const API_KEY = '';
+// Read from .env (EXPO_PUBLIC_FEATHERLESS_API_KEY). Never hardcode real keys.
+const API_KEY = process.env.EXPO_PUBLIC_FEATHERLESS_API_KEY ?? '';
 
 export async function callFeatherless(
   systemPrompt: string,

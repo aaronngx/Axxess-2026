@@ -162,7 +162,7 @@ export const EyeHistory: React.FC = () => {
           <Text style={styles.emptyDesc}>
             Complete a vision check to see your history and track changes over time.
           </Text>
-          <TouchableOpacity style={styles.startBtn} onPress={() => navigation.navigate('EyeSafetyGate')}>
+          <TouchableOpacity style={styles.startBtn} onPress={() => navigation.navigate('EyeSetupCamera')}>
             <Text style={styles.startBtnText}>Start Vision Check →</Text>
           </TouchableOpacity>
         </View>

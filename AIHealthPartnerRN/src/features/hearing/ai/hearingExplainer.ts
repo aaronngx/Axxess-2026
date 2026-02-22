@@ -5,7 +5,8 @@
 import { HearingSessionResult } from '../models/types';
 import { nextStepLabel } from '../engine/safetyRules';
 
-const FEATHERLESS_API_KEY = ''; // Set your Featherless API key here
+// Read from .env (EXPO_PUBLIC_FEATHERLESS_API_KEY). Never hardcode real keys.
+const FEATHERLESS_API_KEY = process.env.EXPO_PUBLIC_FEATHERLESS_API_KEY ?? '';
 const FEATHERLESS_URL = 'https://api.featherless.ai/v1/chat/completions';
 const MODEL = 'meta-llama/Meta-Llama-3.1-8B-Instruct';
 

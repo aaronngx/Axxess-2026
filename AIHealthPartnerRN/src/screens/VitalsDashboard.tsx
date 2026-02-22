@@ -132,7 +132,7 @@ export const VitalsDashboard: React.FC = () => {
         {/* Eye Vision Check card */}
         <TouchableOpacity
           style={styles.eyeCard}
-          onPress={() => navigation.navigate('EyeSafetyGate')}
+          onPress={() => navigation.navigate('EyeSetupCamera')}
           activeOpacity={0.85}
         >
           <LinearGradient

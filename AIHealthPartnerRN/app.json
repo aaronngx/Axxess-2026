@@ -10,6 +10,9 @@
       "backgroundColor": "#0A0A1A"
     },
     "assetBundlePatterns": ["**/*"],
+    "android": {
+      "package": "com.axxess.aihealthpartner"
+    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.axxess.aihealthpartner",
@@ -22,6 +25,13 @@
         "com.apple.developer.healthkit.access": []
       }
     },
-    "plugins": []
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow AI Health Partner to access your camera for eye vision screening."
+        }
+      ]
+    ]
   }
 }

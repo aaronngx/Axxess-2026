@@ -176,28 +176,42 @@ export const EyeNear: React.FC = () => {
             <Text style={styles.title}>Eye Comfort</Text>
             <Text style={styles.desc}>After reading at that distance, how do your eyes feel?</Text>
 
-            <Text style={styles.ratingLabel}>Eye strain: {strainScore != null ? strainScore : '?'}/10</Text>
-            <View style={styles.ratingRow}>
-              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(v => (
+            <Text style={styles.ratingLabel}>Eye strain</Text>
+            <View style={styles.choiceRow}>
+              {[
+                { label: 'None',    emoji: '😌', value: 0 },
+                { label: 'A little', emoji: '😐', value: 4 },
+                { label: 'A lot',   emoji: '😣', value: 9 },
+              ].map(opt => (
                 <TouchableOpacity
-                  key={v}
-                  style={[styles.ratingBtn, strainScore === v && styles.ratingBtnSel]}
-                  onPress={() => setStrainScore(v)}
+                  key={opt.value}
+                  style={[styles.choiceBtn, strainScore === opt.value && styles.choiceBtnSel]}
+                  onPress={() => setStrainScore(opt.value)}
                 >
-                  <Text style={styles.ratingBtnText}>{v}</Text>
+                  <Text style={styles.choiceEmoji}>{opt.emoji}</Text>
+                  <Text style={[styles.choiceLabel, strainScore === opt.value && styles.choiceLabelSel]}>
+                    {opt.label}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            <Text style={styles.ratingLabel}>Blur / double vision: {blurScore != null ? blurScore : '?'}/10</Text>
-            <View style={styles.ratingRow}>
-              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(v => (
+            <Text style={styles.ratingLabel}>Blur / double vision</Text>
+            <View style={styles.choiceRow}>
+              {[
+                { label: 'No blur',      emoji: '👁', value: 0 },
+                { label: 'Some blur',    emoji: '🔸', value: 4 },
+                { label: 'Significant', emoji: '🔴', value: 9 },
+              ].map(opt => (
                 <TouchableOpacity
-                  key={v}
-                  style={[styles.ratingBtn, blurScore === v && styles.ratingBtnSel]}
-                  onPress={() => setBlurScore(v)}
+                  key={opt.value}
+                  style={[styles.choiceBtn, blurScore === opt.value && styles.choiceBtnSel]}
+                  onPress={() => setBlurScore(opt.value)}
                 >
-                  <Text style={styles.ratingBtnText}>{v}</Text>
+                  <Text style={styles.choiceEmoji}>{opt.emoji}</Text>
+                  <Text style={[styles.choiceLabel, blurScore === opt.value && styles.choiceLabelSel]}>
+                    {opt.label}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -282,16 +296,18 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(46,204,113,0.2)',
   },
   doneTitle: { fontSize: 15, fontWeight: '700', color: '#2ECC71' },
-  ratingLabel: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600', marginBottom: 8, marginTop: 12 },
-  ratingRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginBottom: 4 },
-  ratingBtn: {
-    width: 34, height: 34, borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.07)',
+  ratingLabel: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600', marginBottom: 8, marginTop: 16 },
+  choiceRow: { flexDirection: 'row', gap: 10, marginBottom: 4 },
+  choiceBtn: {
+    flex: 1, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 8,
+    backgroundColor: 'rgba(255,255,255,0.06)',
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.08)',
   },
-  ratingBtnSel: { backgroundColor: 'rgba(162,155,254,0.3)', borderColor: '#A29BFE' },
-  ratingBtnText: { fontSize: 12, color: '#FFFFFF', fontWeight: '600' },
+  choiceBtnSel: { backgroundColor: 'rgba(162,155,254,0.2)', borderColor: '#A29BFE' },
+  choiceEmoji: { fontSize: 22, marginBottom: 5 },
+  choiceLabel: { fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: '600', textAlign: 'center' },
+  choiceLabelSel: { color: '#A29BFE' },
   headacheBtn: {
     backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12,
     padding: 14, alignItems: 'center', marginTop: 12, marginBottom: 20,
