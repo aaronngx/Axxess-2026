@@ -44,8 +44,15 @@ const styles = StyleSheet.create({
     alignItems: 'center', padding: 12, borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.06)', flex: 1, marginHorizontal: 4,
   },
+<<<<<<< HEAD
   selectedBtn: { backgroundColor: 'rgba(108, 92, 231, 0.5)', borderWidth: 2, borderColor: '#6C5CE7' },
   emoji: { fontSize: 28 },
   moodLabel: { fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 6, fontWeight: '600' },
   selectedLabel: { color: '#A29BFE' },
+=======
+  selectedBtn: { backgroundColor: 'rgba(35, 87, 137, 0.4)', borderWidth: 2, borderColor: '#235789' },
+  emoji: { fontSize: 28 },
+  moodLabel: { fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 6, fontWeight: '600' },
+  selectedLabel: { color: '#42CAFD' },
+>>>>>>> origin/frontend-UI-fixed
 });

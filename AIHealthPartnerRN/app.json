@@ -9,14 +9,21 @@
     "splash": {
       "backgroundColor": "#0A0A1A"
     },
+<<<<<<< HEAD
     "assetBundlePatterns": ["**/*"],
     "android": {
       "package": "com.axxess.aihealthpartner"
     },
+=======
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+>>>>>>> origin/frontend-UI-fixed
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.axxess.aihealthpartner",
       "infoPlist": {
+<<<<<<< HEAD
         "NSHealthShareUsageDescription": "AI Health Partner reads your health data to provide real-time vitals monitoring and anomaly detection.",
         "NSHealthUpdateUsageDescription": "AI Health Partner writes health data to help track your recovery progress."
       },
@@ -33,5 +40,22 @@
         }
       ]
     ]
+=======
+        "NSMicrophoneUsageDescription": "This app needs access to your microphone for voice interaction with the AI chatbot.",
+        "NSSpeechRecognitionUsageDescription": "This app uses speech recognition to convert your voice to text."
+      }
+    },
+    "plugins": [
+      "expo-av",
+      "expo-font"
+    ],
+    "android": {
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ],
+      "package": "com.axxess.aihealthpartner"
+    }
+>>>>>>> origin/frontend-UI-fixed
   }
 }

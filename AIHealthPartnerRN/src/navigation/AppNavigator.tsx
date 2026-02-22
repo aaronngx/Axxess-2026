@@ -5,12 +5,15 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { BlurView } from 'expo-blur';
+
+// Premium Overhaul Screens
 import { VitalsDashboard } from '../screens/VitalsDashboard';
 import { MentalHealthScreen } from '../screens/MentalHealthScreen';
 import { RecoveryScreen } from '../screens/RecoveryScreen';
 import { EmergencyScreen } from '../screens/EmergencyScreen';
+import { ClinicalScreen } from '../screens/ClinicalScreen';
 
-// Eye feature screens
+// Eye feature screens (Preserved)
 import { EyeSetupCamera } from '../features/eye/screens/EyeSetupCamera';
 import { EyePdLock } from '../features/eye/screens/EyePdLock';
 import { EyeFarTest } from '../features/eye/screens/EyeFarTest';
@@ -23,7 +26,7 @@ import { EyeHistory } from '../features/eye/screens/EyeHistory';
 import { EyeSessionProvider } from '../features/eye/EyeSessionContext';
 import { RootStackParamList } from '../features/eye/models/types';
 
-// Hearing Screening screens
+// Hearing Screening screens (Preserved)
 import { HearingEntry } from '../features/hearing/screens/HearingEntry';
 import { HearingPreCheck } from '../features/hearing/screens/HearingPreCheck';
 import { HearingAppleInput } from '../features/hearing/screens/HearingAppleInput';
@@ -36,25 +39,25 @@ const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator<RootStackParamList>();
 
 const TAB_CONFIG = [
-  { name: 'Vitals', component: VitalsDashboard, icon: '❤️', label: 'Vitals' },
-  { name: 'Mental', component: MentalHealthScreen, icon: '🧠', label: 'Mental' },
-  { name: 'Recovery', component: RecoveryScreen, icon: '🌿', label: 'Recovery' },
-  { name: 'Emergency', component: EmergencyScreen, icon: '🆘', label: 'SOS' },
+  { name: 'Vitals', component: VitalsDashboard, icon: '❤️', label: 'Vitals', activeColor: '#42CAFD' },
+  { name: 'Mental', component: MentalHealthScreen, icon: '🧠', label: 'Mental', activeColor: '#FF758C' },
+  { name: 'Recovery', component: RecoveryScreen, icon: '🌿', label: 'Recovery', activeColor: '#128208' },
+  { name: 'Clinical', component: ClinicalScreen, icon: '🏥', label: 'Clinical', activeColor: '#42CAFD' },
+  { name: 'Emergency', component: EmergencyScreen, icon: '🆘', label: 'SOS', activeColor: '#D33F49' },
 ];
 
-// Bottom tabs — unchanged from original
 const TabsNavigator: React.FC = () => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
       headerShown: false,
-      tabBarStyle: tabStyles.tabBar,
+      tabBarStyle: styles.tabBar,
       tabBarBackground: () => (
         <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
       ),
       tabBarLabel: ({ focused }) => {
         const cfg = TAB_CONFIG.find(t => t.name === route.name)!;
         return (
-          <Text style={[tabStyles.tabLabel, focused && tabStyles.tabLabelActive]}>
+          <Text style={[styles.tabLabel, focused && { color: cfg.activeColor }]}>
             {cfg.label}
           </Text>
         );
@@ -62,8 +65,8 @@ const TabsNavigator: React.FC = () => (
       tabBarIcon: ({ focused }) => {
         const cfg = TAB_CONFIG.find(t => t.name === route.name)!;
         return (
-          <View style={[tabStyles.iconWrap, focused && tabStyles.iconWrapActive]}>
-            <Text style={tabStyles.icon}>{cfg.icon}</Text>
+          <View style={[styles.iconWrap, focused && { backgroundColor: `${cfg.activeColor}4D` }]}>
+            <Text style={styles.icon}>{cfg.icon}</Text>
           </View>
         );
       },
@@ -80,11 +83,11 @@ export const AppNavigator: React.FC = () => {
     <EyeSessionProvider>
       <HearingSessionProvider>
         <NavigationContainer>
-          <Stack.Navigator screenOptions={{ headerShown: false, cardStyle: { backgroundColor: '#0A0A1A' } }}>
+          <Stack.Navigator screenOptions={{ headerShown: false, cardStyle: { backgroundColor: '#161925' } }}>
             {/* Main app tabs */}
             <Stack.Screen name="Tabs" component={TabsNavigator} />
 
-            {/* Eye Vision Screening flow */}
+            {/* Eye Vision Screening flow (Preserved) */}
             <Stack.Screen name="EyeSetupCamera" component={EyeSetupCamera} />
             <Stack.Screen name="EyePdLock" component={EyePdLock} />
             <Stack.Screen name="EyeFarTest" component={EyeFarTest} />
@@ -95,7 +98,7 @@ export const AppNavigator: React.FC = () => {
             <Stack.Screen name="EyeResults" component={EyeResults} />
             <Stack.Screen name="EyeHistory" component={EyeHistory} />
 
-            {/* Hearing Screening flow */}
+            {/* Hearing Screening flow (Preserved) */}
             <Stack.Screen name="HearingEntry" component={HearingEntry} />
             <Stack.Screen name="HearingPreCheck" component={HearingPreCheck} />
             <Stack.Screen name="HearingAppleInput" component={HearingAppleInput} />
@@ -109,23 +112,19 @@ export const AppNavigator: React.FC = () => {
   );
 };
 
-const tabStyles = StyleSheet.create({
+const styles = StyleSheet.create({
   tabBar: {
     position: 'absolute',
     borderTopWidth: 0,
     backgroundColor: 'transparent',
     elevation: 0,
-    height: 88,
+    height: 96,
   },
   iconWrap: {
-    width: 44, height: 44, borderRadius: 22,
+    width: 40, height: 40, borderRadius: 20,
     alignItems: 'center', justifyContent: 'center',
-    marginTop: 6,
-  },
-  iconWrapActive: {
-    backgroundColor: 'rgba(108,92,231,0.3)',
+    marginTop: 8,
   },
   icon: { fontSize: 22 },
-  tabLabel: { fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: '600', marginBottom: 8 },
-  tabLabelActive: { color: '#A29BFE' },
+  tabLabel: { fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: '700', marginTop: 8 },
 });

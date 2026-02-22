@@ -3,21 +3,14 @@ import 'react-native-gesture-handler';
 import React from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppNavigator } from './src/navigation/AppNavigator';
-<<<<<<< HEAD
-=======
 import { AppProvider } from './src/context/AppContext';
->>>>>>> origin/frontend-UI-fixed
 
 export default function App() {
   return (
     <SafeAreaProvider>
-<<<<<<< HEAD
-      <AppNavigator />
-=======
       <AppProvider>
         <AppNavigator />
       </AppProvider>
->>>>>>> origin/frontend-UI-fixed
     </SafeAreaProvider>
   );
 }
