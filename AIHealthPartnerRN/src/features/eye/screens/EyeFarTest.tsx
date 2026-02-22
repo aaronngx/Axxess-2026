@@ -1,5 +1,6 @@
 // src/features/eye/screens/EyeFarTest.tsx — Phases 4 & 5 (Run 1) + Phase 6 (Run 2)
-// Real 2-down-1-up adaptive staircase with Tumbling E optotype.
+// Adaptive staircase with Tumbling E.  Run 1: cap at 7 trials.  Run 2: cap at 4.
+// Gated by accelerometer tracking (hold phone steady + upright).
 
 import React, { useCallback, useRef, useState } from 'react';
 import {
@@ -13,14 +14,20 @@ import {
   LOGMAR_LEVELS,
 } from '../engine/staircase';
 import { TumblingE, randomDirection, DIR_ARROW, E_DIRECTIONS, EDirection } from '../engine/stimuli';
-import { logMARtoSER, serToSphere } from '../engine/scoring';
+import { logMARtoSER } from '../engine/scoring';
 import { EyeRunResult, RootStackParamList } from '../models/types';
+import { useTracking } from '../tracking/trackingEngine';
+import { TrackingOverlay } from '../tracking/TrackingOverlay';
+import { useSpeech, speak } from '../hooks/useSpeech';
 
 type Route = RouteProp<RootStackParamList, 'EyeFarTest'>;
 
 const { width } = Dimensions.get('window');
 
 const EYE_COVER: Record<string, string> = { right: 'Cover your LEFT eye', left: 'Cover your RIGHT eye' };
+
+// Trial caps per run: run 1 = 7 prompts, run 2 = 4 prompts
+const TRIAL_CAP: Record<1 | 2, number> = { 1: 7, 2: 4 };
 
 function nextScreen(eye: 'right' | 'left', run: 1 | 2): { screen: string; params?: object } {
   if (eye === 'right') return { screen: 'EyeFarTest', params: { eye: 'left', run } };
@@ -39,6 +46,9 @@ export const EyeFarTest: React.FC = () => {
   const { eye, run } = route.params;
   const insets = useSafeAreaInsets();
   const { session, updateSession } = useEyeSession();
+  const tracking = useTracking();
+
+  const trialCap = TRIAL_CAP[run];
 
   const [sc, setSc] = useState(createStaircaseState);
   const [direction, setDirection] = useState<EDirection>(randomDirection);
@@ -48,8 +58,41 @@ export const EyeFarTest: React.FC = () => {
 
   const trialStart = useRef(Date.now());
 
+  // Voice: announce eye + instruction on mount
+  const eyeWord = eye === 'right' ? 'left' : 'right';
+  useSpeech(
+    `Cover your ${eyeWord} eye. A letter E will appear. Tap the arrow that matches which way it points.`,
+    [eye],
+  );
+
+  // Voice: announce PAUSED transitions (debounced — only fire once per switch)
+  const prevTrackState = useRef<string | null>(null);
+  useEffect(() => {
+    if (prevTrackState.current === tracking.state) return;
+    if (tracking.state === 'PAUSED' && prevTrackState.current === 'LOCKED') {
+      speak('Hold the phone steady and upright.');
+    }
+    prevTrackState.current = tracking.state;
+  }, [tracking.state]);
+
+  // Voice: announce test completion
+  const doneSpeechFired = useRef(false);
+  useEffect(() => {
+    if (cappedDone && !doneSpeechFired.current) {
+      doneSpeechFired.current = true;
+      const eyeName = eye === 'right' ? 'Right' : 'Left';
+      speak(`${eyeName} eye complete. Tap Save and Continue.`);
+    }
+  }, [cappedDone]);
+
+  // Consider test done when staircase finishes OR we hit the run-specific cap
+  const cappedDone = sc.done || sc.trials.length >= trialCap;
+  const isLocked = tracking.state === 'LOCKED';
+
   const handleResponse = useCallback((chosen: EDirection) => {
-    if (responded || sc.done) return;
+    if (responded || cappedDone) return;
+    if (!isLocked) return; // gated — ignore input while moving
+
     const rt = Date.now() - trialStart.current;
     const correct = chosen === direction;
 
@@ -59,7 +102,8 @@ export const EyeFarTest: React.FC = () => {
     const next = updateStaircase(sc, correct, rt);
     setSc(next);
 
-    if (!next.done) {
+    const willBeDone = next.done || next.trials.length >= trialCap;
+    if (!willBeDone) {
       setTimeout(() => {
         setDirection(randomDirection());
         setResponded(false);
@@ -67,18 +111,16 @@ export const EyeFarTest: React.FC = () => {
         trialStart.current = Date.now();
       }, 600);
     }
-  }, [sc, direction, responded]);
+  }, [sc, direction, responded, cappedDone, isLocked, trialCap]);
 
   const handleFinish = useCallback(() => {
     const threshold = sc.threshold ?? LOGMAR_LEVELS[sc.currentLevelIdx].logMAR;
     const ser = logMARtoSER(threshold);
-    // Cylinder from astig runs (will be filled in EyeAstigDial)
-    const sphere = ser; // no cylinder yet at this step
 
     const runResult: EyeRunResult = {
       eye,
       timestamp: new Date().toISOString(),
-      sphere_d: sphere,
+      sphere_d: ser,
       cylinder_d: null,
       axis_deg: null,
       ser_d: ser,
@@ -97,31 +139,35 @@ export const EyeFarTest: React.FC = () => {
   }, [sc, eye, run, session, updateSession, navigation]);
 
   const level = LOGMAR_LEVELS[sc.currentLevelIdx];
-  const progress = Math.min(100, (sc.reversalLevels.length / 6) * 100);
+  const trialsCompleted = sc.trials.length;
 
   return (
     <View style={[styles.root, { paddingTop: insets.top + 12 }]}>
-      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 24 }]}
-        scrollEnabled={false}>
-
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 24 }]}
+        scrollEnabled={false}
+      >
         {/* Header */}
         <View style={styles.phaseTag}>
           <Text style={styles.phaseText}>{stepLabel(eye, run)}</Text>
         </View>
         <Text style={styles.coverInstr}>{EYE_COVER[eye]}</Text>
 
-        {/* Progress */}
-        <View style={styles.progressBg}>
-          <View style={[styles.progressFill, { width: `${progress}%` }]} />
+        {/* Tracking gate */}
+        <TrackingOverlay tracking={tracking} />
+
+        {/* Trial progress bar (X / cap) */}
+        <View style={styles.progressRow}>
+          <View style={styles.progressBg}>
+            <View style={[styles.progressFill, { width: `${Math.min(100, (trialsCompleted / trialCap) * 100)}%` }]} />
+          </View>
+          <Text style={styles.progressCount}>
+            {cappedDone ? 'Complete' : `${trialsCompleted} / ${trialCap}`}
+          </Text>
         </View>
-        <Text style={styles.progressLabel}>
-          {sc.done
-            ? `Complete · ${sc.trials.length} trials · threshold ${sc.threshold?.toFixed(2)} logMAR`
-            : `Reversals: ${sc.reversalLevels.length}/6 · Trial: ${sc.trials.length}`}
-        </Text>
 
         {/* Optotype area */}
-        {!sc.done ? (
+        {!cappedDone ? (
           <View style={styles.optoArea}>
             <View style={styles.optoContainer}>
               <TumblingE sizePt={level.sizePt} direction={direction} />
@@ -138,25 +184,26 @@ export const EyeFarTest: React.FC = () => {
             <Text style={styles.doneIcon}>✓</Text>
             <Text style={styles.doneTitle}>{eye === 'right' ? 'Right' : 'Left'} Eye Complete</Text>
             <Text style={styles.doneVal}>
-              Threshold: {sc.threshold?.toFixed(2)} logMAR ({
-                LOGMAR_LEVELS.find(l => Math.abs(l.logMAR - (sc.threshold ?? 0)) < 0.05)?.label ?? '—'
-              })
+              Threshold: {(sc.threshold ?? LOGMAR_LEVELS[sc.currentLevelIdx].logMAR).toFixed(2)} logMAR · {trialsCompleted} trials
             </Text>
             <Text style={styles.doneSER}>
-              Estimated SER: {logMARtoSER(sc.threshold ?? 0).toFixed(2)} D
+              Estimated SER: {logMARtoSER(sc.threshold ?? LOGMAR_LEVELS[sc.currentLevelIdx].logMAR).toFixed(2)} D
             </Text>
           </View>
         )}
 
-        {/* Direction buttons */}
-        {!sc.done && (
+        {/* Direction buttons — disabled when paused or already responded */}
+        {!cappedDone && (
           <View style={styles.btnGrid}>
             {E_DIRECTIONS.map(dir => (
               <TouchableOpacity
                 key={dir}
-                style={[styles.dirBtn, responded && styles.dirBtnDim]}
+                style={[
+                  styles.dirBtn,
+                  (responded || !isLocked) && styles.dirBtnDim,
+                ]}
                 onPress={() => handleResponse(dir)}
-                disabled={responded}
+                disabled={responded || !isLocked}
               >
                 <Text style={styles.dirBtnText}>{DIR_ARROW[dir]}</Text>
               </TouchableOpacity>
@@ -166,25 +213,26 @@ export const EyeFarTest: React.FC = () => {
 
         {/* Debug */}
         <TouchableOpacity onPress={() => setDebugOpen(o => !o)} style={styles.debugToggle}>
-          <Text style={styles.debugToggleText}>{debugOpen ? '▼' : '▶'} Debug · Staircase State</Text>
+          <Text style={styles.debugToggleText}>{debugOpen ? '▼' : '▶'} Debug · Staircase</Text>
         </TouchableOpacity>
         {debugOpen && (
           <ScrollView style={styles.debugBox} horizontal>
             <Text style={styles.debugText}>
               {JSON.stringify({
-                eye, run,
+                eye, run, trialCap,
                 level: level.label,
                 reversals: sc.reversalLevels,
                 threshold: sc.threshold,
                 trials: sc.trials.length,
                 accuracy: (getAccuracy(sc) * 100).toFixed(0) + '%',
                 median_rt: getMedianRT(sc) + 'ms',
+                tracking: tracking.state,
               }, null, 2)}
             </Text>
           </ScrollView>
         )}
 
-        {sc.done && (
+        {cappedDone && (
           <TouchableOpacity style={styles.nextBtn} onPress={handleFinish}>
             <Text style={styles.nextBtnText}>Save & Continue →</Text>
           </TouchableOpacity>
@@ -208,12 +256,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(253,203,110,0.12)', borderRadius: 8,
     paddingHorizontal: 12, paddingVertical: 5, alignSelf: 'flex-start', marginBottom: 14,
   },
+  progressRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 },
   progressBg: {
-    height: 3, backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 2, overflow: 'hidden', marginBottom: 6,
+    flex: 1, height: 4, backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 2, overflow: 'hidden',
   },
   progressFill: { height: '100%', backgroundColor: '#A29BFE', borderRadius: 2 },
-  progressLabel: { fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20, fontFamily: 'monospace' },
+  progressCount: { fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: '700', fontFamily: 'monospace', minWidth: 60, textAlign: 'right' },
   optoArea: { alignItems: 'center', marginBottom: 20 },
   optoContainer: { alignItems: 'center', justifyContent: 'center', marginBottom: 12, minHeight: 160 },
   feedback: { position: 'absolute', fontSize: 28, fontWeight: '900', right: -40 },
@@ -236,7 +285,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
   },
-  dirBtnDim: { opacity: 0.4 },
+  dirBtnDim: { opacity: 0.35 },
   dirBtnText: { fontSize: 28, color: '#FFFFFF' },
   debugToggle: { marginBottom: 8 },
   debugToggleText: { fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: '600' },

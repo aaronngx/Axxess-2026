@@ -9,6 +9,9 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEyeSession } from '../EyeSessionContext';
 import { RootStackParamList } from '../models/types';
+import { useTracking } from '../tracking/trackingEngine';
+import { TrackingOverlay } from '../tracking/TrackingOverlay';
+import { useSpeech } from '../hooks/useSpeech';
 
 type Route = RouteProp<RootStackParamList, 'EyeAstigDial'>;
 type AxisChoice = 'equal' | 'updown' | 'leftright' | 'diagonal';
@@ -17,7 +20,7 @@ type DiagChoice = 'ne' | 'nw'; // ↗ or ↘
 function nextScreen(eye: 'right' | 'left', run: 1 | 2): { screen: string; params?: object } {
   if (eye === 'right') return { screen: 'EyeAstigDial', params: { eye: 'left', run } };
   if (run === 1)       return { screen: 'EyeFarTest', params: { eye: 'right', run: 2 } };
-  return                      { screen: 'EyeNear' };
+  return                      { screen: 'EyeResults' };
 }
 
 function stepLabel(eye: 'right' | 'left', run: 1 | 2): string {
@@ -58,6 +61,15 @@ export const EyeAstigDial: React.FC = () => {
   const { eye, run } = route.params;
   const insets = useSafeAreaInsets();
   const { session, updateSession } = useEyeSession();
+  const tracking = useTracking();
+
+  // Voice guidance
+  const eyeWord = eye === 'right' ? 'left' : 'right';
+  useSpeech(
+    `Cover your ${eyeWord} eye. Look at a distant straight edge, like a door frame or window. ` +
+    `Which direction of lines looks darkest or sharpest?`,
+    [eye],
+  );
 
   const [axisChoice, setAxisChoice] = useState<AxisChoice | null>(null);
   const [diagChoice, setDiagChoice] = useState<DiagChoice | null>(null);
@@ -103,6 +115,8 @@ export const EyeAstigDial: React.FC = () => {
         <Text style={styles.coverInstr}>
           {eye === 'right' ? 'Cover your LEFT eye' : 'Cover your RIGHT eye'}
         </Text>
+
+        <TrackingOverlay tracking={tracking} />
 
         <Text style={styles.title}>Astigmatism Check</Text>
         <Text style={styles.desc}>
@@ -207,9 +221,9 @@ export const EyeAstigDial: React.FC = () => {
         )}
 
         <TouchableOpacity
-          style={[styles.nextBtn, !done && styles.nextBtnDim]}
+          style={[styles.nextBtn, (!done || tracking.state === 'PAUSED') && styles.nextBtnDim]}
           onPress={handleSave}
-          disabled={!done}
+          disabled={!done || tracking.state === 'PAUSED'}
         >
           <Text style={styles.nextBtnText}>
             {done ? 'Save & Continue →' : 'Select an option to continue'}

@@ -13,15 +13,12 @@ import { RecoveryScreen } from '../screens/RecoveryScreen';
 import { EmergencyScreen } from '../screens/EmergencyScreen';
 import { ClinicalScreen } from '../screens/ClinicalScreen';
 
-// Eye feature screens (Preserved)
-import { EyeSafetyGate } from '../features/eye/screens/EyeSafetyGate';
+// Eye feature screens
 import { EyeSetupCamera } from '../features/eye/screens/EyeSetupCamera';
 import { EyePdLock } from '../features/eye/screens/EyePdLock';
 import { EyeFarTest } from '../features/eye/screens/EyeFarTest';
 import { EyeAstigDial } from '../features/eye/screens/EyeAstigDial';
-import { EyeNear } from '../features/eye/screens/EyeNear';
-import { EyeContrast } from '../features/eye/screens/EyeContrast';
-import { EyeLowLight } from '../features/eye/screens/EyeLowLight';
+import { ReadingLab } from '../features/eye/screens/ReadingLab';
 import { EyeResults } from '../features/eye/screens/EyeResults';
 import { EyeHistory } from '../features/eye/screens/EyeHistory';
 import { EyeSessionProvider } from '../features/eye/EyeSessionContext';
@@ -88,15 +85,14 @@ export const AppNavigator: React.FC = () => {
             {/* Main app tabs */}
             <Stack.Screen name="Tabs" component={TabsNavigator} />
 
-            {/* Eye Vision Screening flow (Preserved) */}
-            <Stack.Screen name="EyeSafetyGate" component={EyeSafetyGate} />
+            {/* Eye Exam path: EyeSetupCamera → EyePdLock → EyeFarTest/EyeAstigDial loops → EyeResults */}
             <Stack.Screen name="EyeSetupCamera" component={EyeSetupCamera} />
             <Stack.Screen name="EyePdLock" component={EyePdLock} />
             <Stack.Screen name="EyeFarTest" component={EyeFarTest} />
             <Stack.Screen name="EyeAstigDial" component={EyeAstigDial} />
-            <Stack.Screen name="EyeNear" component={EyeNear} />
-            <Stack.Screen name="EyeContrast" component={EyeContrast} />
-            <Stack.Screen name="EyeLowLight" component={EyeLowLight} />
+            {/* Vision Insights path: ReadingLab → EyeResults */}
+            <Stack.Screen name="ReadingLab" component={ReadingLab} />
+            {/* Shared results */}
             <Stack.Screen name="EyeResults" component={EyeResults} />
             <Stack.Screen name="EyeHistory" component={EyeHistory} />
 

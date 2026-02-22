@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Notifications from 'expo-notifications';
+import { useNavigation } from '@react-navigation/native';
 import { useAppContext } from '../context/AppContext';
 
 // Configure notification behavior
@@ -22,6 +23,7 @@ Notifications.setNotificationHandler({
 
 export const ClinicalScreen: React.FC = () => {
     const insets = useSafeAreaInsets();
+    const navigation = useNavigation<any>();
     const { symptomLog, addSymptom: logSymptom, removeSymptom: deleteSymptom, appointment, updateAppointment } = useAppContext();
     const [showPicker, setShowPicker] = useState(false);
     const [newSymptom, setNewSymptom] = useState('');
@@ -102,6 +104,40 @@ export const ClinicalScreen: React.FC = () => {
                 >
                     <Text style={styles.title}>Clinical Care</Text>
                     <Text style={styles.subtitle}>Appointments & Symptom Tracking</Text>
+
+                    {/* Screenings */}
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>Vision Screenings</Text>
+                        <Text style={styles.sectionSub}>Self-screening — not a medical device</Text>
+                    </View>
+                    <View style={styles.screeningRow}>
+                        <TouchableOpacity
+                            style={styles.screeningTile}
+                            onPress={() => navigation.navigate('EyeSetupCamera')}
+                        >
+                            <LinearGradient
+                                colors={['rgba(108,92,231,0.25)', 'rgba(162,155,254,0.1)']}
+                                style={styles.screeningGrad}
+                            >
+                                <Text style={styles.screeningIcon}>👁</Text>
+                                <Text style={styles.screeningTitle}>Eye Exam</Text>
+                                <Text style={styles.screeningSub}>Far acuity + astigmatism</Text>
+                            </LinearGradient>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.screeningTile}
+                            onPress={() => navigation.navigate('ReadingLab')}
+                        >
+                            <LinearGradient
+                                colors={['rgba(66,202,253,0.18)', 'rgba(35,87,137,0.1)']}
+                                style={styles.screeningGrad}
+                            >
+                                <Text style={styles.screeningIcon}>📖</Text>
+                                <Text style={styles.screeningTitle}>Vision Insights</Text>
+                                <Text style={styles.screeningSub}>Near · contrast · Vision Age</Text>
+                            </LinearGradient>
+                        </TouchableOpacity>
+                    </View>
 
                     {/* Appointment Card */}
                     <LinearGradient colors={['rgba(66, 202, 253, 0.15)', 'rgba(35, 87, 137, 0.1)']} style={styles.card}>
@@ -249,4 +285,10 @@ const styles = StyleSheet.create({
         marginBottom: 8
     },
     doneBtnText: { color: '#42CAFD', fontWeight: '700', fontSize: 14 },
+    screeningRow: { flexDirection: 'row', gap: 12, marginBottom: 24 },
+    screeningTile: { flex: 1, borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+    screeningGrad: { padding: 18, alignItems: 'center', minHeight: 120, justifyContent: 'center' },
+    screeningIcon: { fontSize: 28, marginBottom: 8 },
+    screeningTitle: { fontSize: 15, fontWeight: '800', color: '#FFFFFF', marginBottom: 4, textAlign: 'center' },
+    screeningSub: { fontSize: 11, color: 'rgba(255,255,255,0.5)', textAlign: 'center', lineHeight: 16 },
 });

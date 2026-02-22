@@ -107,15 +107,19 @@ export interface EyeSessionResult {
 // Root stack navigation param list
 export type RootStackParamList = {
   Tabs: undefined;
-  // Eye Vision Screening
-  EyeSafetyGate: undefined;
+  // Eye Vision Screening — Eye Exam path
+  EyeSafetyGate: undefined; // kept for type safety; no longer in navigator
   EyeSetupCamera: undefined;
   EyePdLock: undefined;
   EyeFarTest: { eye: EyeSide; run: 1 | 2 };
   EyeAstigDial: { eye: EyeSide; run: 1 | 2 };
+  // Legacy screens kept for type safety (no longer registered in navigator)
   EyeNear: undefined;
   EyeContrast: undefined;
   EyeLowLight: undefined;
+  // Eye Vision Screening — Vision Insights path
+  ReadingLab: undefined;
+  // Shared results
   EyeResults: undefined;
   EyeHistory: undefined;
   // Hearing Screening

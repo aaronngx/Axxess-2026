@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Svg, { Ellipse, Defs, Mask, Rect } from 'react-native-svg';
 import { useEyeSession } from '../EyeSessionContext';
+import { useSpeech, speak } from '../hooks/useSpeech';
 
 const IS_WEB = Platform.OS === 'web';
 const IS_SIMULATOR = !Device.isDevice && Platform.OS !== 'web';
@@ -41,6 +42,21 @@ export const EyeSetupCamera: React.FC = () => {
   const [stableMs, setStableMs] = useState((IS_WEB || IS_SIMULATOR) ? STABLE_DURATION : 0);
   const [ready, setReady] = useState(false);
   const [lightingOk] = useState(true);
+
+  // Voice guidance
+  useSpeech(
+    IS_WEB || IS_SIMULATOR
+      ? 'Position yourself about 40 centimetres from the screen — roughly arm\'s length.'
+      : 'Hold the phone at arm\'s length. Center your face in the oval and keep it still.',
+    [],
+  );
+  const readySpeechFired = useRef(false);
+  useEffect(() => {
+    if (ready && !readySpeechFired.current) {
+      readySpeechFired.current = true;
+      speak('Position locked. Tap Continue when you\'re ready.');
+    }
+  }, [ready]);
 
   const stableStart = useRef<number | null>((IS_WEB || IS_SIMULATOR) ? Date.now() : null);
   const pulse = useRef(new Animated.Value(1)).current;
@@ -176,7 +192,7 @@ export const EyeSetupCamera: React.FC = () => {
       {/* Camera feed — full screen */}
       <CameraView style={StyleSheet.absoluteFill} facing="front" />
 
-      {/* Oval cutout overlay */}
+      {/* Oval cutout overlay with distance zone rings */}
       <Animated.View
         style={[StyleSheet.absoluteFill, styles.overlay, { transform: [{ scale: pulse }] }]}
         pointerEvents="none"
@@ -189,12 +205,29 @@ export const EyeSetupCamera: React.FC = () => {
             </Mask>
           </Defs>
           <Rect width="100%" height="100%" fill="rgba(10,10,26,0.65)" mask="url(#hole)" />
+          {/* Outer ring — too far hint */}
+          <Ellipse
+            cx="50%" cy="40%" rx="44%" ry="38%"
+            fill="none"
+            stroke="rgba(255,255,255,0.10)"
+            strokeWidth={1}
+            strokeDasharray="5 6"
+          />
+          {/* Target ring — green when stable, purple dashed otherwise */}
           <Ellipse
             cx="50%" cy="40%" rx="32%" ry="28%"
             fill="none"
             stroke={isStable ? '#2ECC71' : '#A29BFE'}
             strokeWidth={2.5}
             strokeDasharray={isStable ? '0' : '8 6'}
+          />
+          {/* Inner ring — too close hint */}
+          <Ellipse
+            cx="50%" cy="40%" rx="20%" ry="17%"
+            fill="none"
+            stroke="rgba(255,100,80,0.20)"
+            strokeWidth={1}
+            strokeDasharray="4 5"
           />
         </Svg>
       </Animated.View>
@@ -205,8 +238,12 @@ export const EyeSetupCamera: React.FC = () => {
           <Text style={styles.phaseText}>STEP 2 OF 11 · CAMERA SETUP</Text>
         </View>
         <Text style={styles.title}>Position your face</Text>
-        <Text style={styles.subtitle}>~40 cm away (arm's length) · Face in oval</Text>
-        <Text style={styles.distanceTip}>Tip: a credit card (8.5 cm) at arm's length = size reference</Text>
+        <Text style={styles.subtitle}>~40 cm away (arm's length) · Face fills the oval</Text>
+        <View style={styles.distanceZoneRow}>
+          <Text style={styles.distanceZoneClose}>● Too close</Text>
+          <Text style={styles.distanceZoneOk}>● Target</Text>
+          <Text style={styles.distanceZoneFar}>● Too far</Text>
+        </View>
       </View>
 
       {/* Bottom panel */}
@@ -275,7 +312,10 @@ const styles = StyleSheet.create({
   phaseText: { fontSize: 11, color: '#A29BFE', fontWeight: '700', letterSpacing: 1 },
   title: { fontSize: 26, fontWeight: '800', color: '#FFFFFF', marginBottom: 4 },
   subtitle: { fontSize: 14, color: 'rgba(255,255,255,0.6)' },
-  distanceTip: { fontSize: 11, color: 'rgba(162,155,254,0.7)', marginTop: 5 },
+  distanceZoneRow: { flexDirection: 'row', gap: 12, marginTop: 6 },
+  distanceZoneClose: { fontSize: 10, color: 'rgba(255,100,80,0.70)', fontWeight: '700' },
+  distanceZoneOk:    { fontSize: 10, color: 'rgba(46,204,113,0.85)', fontWeight: '700' },
+  distanceZoneFar:   { fontSize: 10, color: 'rgba(255,255,255,0.25)', fontWeight: '700' },
   bottomPanel: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     backgroundColor: 'rgba(10,10,26,0.92)',
