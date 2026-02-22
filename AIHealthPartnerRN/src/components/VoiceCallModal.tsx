@@ -56,7 +56,26 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
 
         setupVoice();
 
+        // Initial audio mode setup
+        const initAudio = async () => {
+            try {
+                await Audio.requestPermissionsAsync();
+                await Audio.setAudioModeAsync({
+                    allowsRecordingIOS: true,
+                    playsInSilentModeIOS: true,
+                    staysActiveInBackground: true,
+                    interruptionModeIOS: 1, // InterruptionModeIOS.DoNotMix
+                    shouldDuckAndroid: true,
+                    interruptionModeAndroid: 1, // InterruptionModeAndroid.DoNotMix
+                    playThroughEarpieceAndroid: false,
+                });
+            } catch (e) {
+                console.warn('Audio init error:', e);
+            }
+        };
+
         if (visible) {
+            initAudio();
             startPulse();
             if (messages.length <= 1) {
                 speakResponse("Hi! I'm your AI Health Partner. I'm listening, how are you feeling?");
@@ -125,6 +144,16 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
         if (!isActiveRef.current) return;
         try {
             Speech.stop();
+
+            // 1. Unload any existing recording first
+            if (recordingRef.current) {
+                try {
+                    await recordingRef.current.stopAndUnloadAsync();
+                } catch (e) { }
+                recordingRef.current = null;
+                setRecording(null);
+            }
+
             const { status: permStatus } = await Audio.requestPermissionsAsync();
             if (permStatus !== 'granted') {
                 Alert.alert("Permission Denied", "Microphone access is required for voice calls. Please enable it in Settings.");
@@ -135,40 +164,46 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
                 allowsRecordingIOS: true,
                 playsInSilentModeIOS: true,
                 staysActiveInBackground: true,
-                interruptionModeIOS: 1,
+                interruptionModeIOS: 1, // InterruptionModeIOS.DoNotMix
                 shouldDuckAndroid: true,
-                interruptionModeAndroid: 1,
+                interruptionModeAndroid: 1, // InterruptionModeAndroid.DoNotMix
                 playThroughEarpieceAndroid: !isSpeakerOn
             });
 
-            const { recording: newRecording } = await Audio.Recording.createAsync(
-                {
-                    ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
-                    isMeteringEnabled: true,
-                },
-                (status) => {
-                    if (status.metering !== undefined) {
-                        // Metering: -160 (silent) to 0 (max).
-                        // Let's make it very sensitive: anything above -60 is "talking"
-                        const normalizedVolume = Math.min(1, Math.max(0, (status.metering + 60) / 60));
-                        setVolume(normalizedVolume);
+            // Give iOS a moment to switch audio sessions
+            await new Promise(resolve => setTimeout(resolve, 500));
 
-                        if (normalizedVolume < 0.1) { // 10% threshold
-                            if (!silenceTimerRef.current) {
-                                silenceTimerRef.current = setTimeout(() => {
-                                    stopListeningAndProcess();
-                                }, 3000);
-                            }
-                        } else {
-                            if (silenceTimerRef.current) {
-                                clearTimeout(silenceTimerRef.current);
-                                silenceTimerRef.current = null;
-                            }
+            // 2. Create and prepare recording
+            const newRecording = new Audio.Recording();
+            setDebugText('Preparing microphone...');
+
+            await newRecording.prepareToRecordAsync({
+                ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
+                isMeteringEnabled: true,
+            });
+
+            newRecording.setOnRecordingStatusUpdate((status) => {
+                if (status.canRecord && status.isRecording && status.metering !== undefined) {
+                    const normalizedVolume = Math.min(1, Math.max(0, (status.metering + 60) / 60));
+                    setVolume(normalizedVolume);
+
+                    if (normalizedVolume < 0.1) {
+                        if (!silenceTimerRef.current) {
+                            silenceTimerRef.current = setTimeout(() => {
+                                stopListeningAndProcess();
+                            }, 3000);
+                        }
+                    } else {
+                        if (silenceTimerRef.current) {
+                            clearTimeout(silenceTimerRef.current);
+                            silenceTimerRef.current = null;
                         }
                     }
-                },
-                200
-            );
+                }
+            });
+
+            // 3. Start recording
+            await newRecording.startAsync();
 
             setRecording(newRecording);
             recordingRef.current = newRecording;
@@ -177,7 +212,8 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
         } catch (err) {
             console.error('Failed to start recording', err);
             setStatus('idle');
-            Alert.alert("Mic Error", "Could not start microphone. If on a simulator, verify Mac Input settings.");
+            setDebugText('Mic Error');
+            Alert.alert("Mic Error", "Could not start microphone. Ensure Mac Input settings allow microphone access if on a simulator.");
         }
     };
 

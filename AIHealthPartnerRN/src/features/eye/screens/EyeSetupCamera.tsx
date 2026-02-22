@@ -5,12 +5,14 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, Platform } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Accelerometer } from 'expo-sensors';
+import * as Device from 'expo-device';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Svg, { Ellipse, Defs, Mask, Rect } from 'react-native-svg';
 import { useEyeSession } from '../EyeSessionContext';
 
 const IS_WEB = Platform.OS === 'web';
+const IS_SIMULATOR = !Device.isDevice && Platform.OS !== 'web';
 
 const WINDOW_SIZE = 20;      // ~2s at 10 Hz
 const STABLE_THRESHOLD = 0.03; // g — low variance = stable
@@ -35,20 +37,20 @@ export const EyeSetupCamera: React.FC = () => {
   const [permission, requestPermission] = useCameraPermissions();
 
   const [samples, setSamples] = useState<AccelSample[]>([]);
-  const [isStable, setIsStable] = useState(IS_WEB);
-  const [stableMs, setStableMs] = useState(IS_WEB ? STABLE_DURATION : 0);
+  const [isStable, setIsStable] = useState(IS_WEB || IS_SIMULATOR);
+  const [stableMs, setStableMs] = useState((IS_WEB || IS_SIMULATOR) ? STABLE_DURATION : 0);
   const [ready, setReady] = useState(false);
   const [lightingOk] = useState(true);
 
-  const stableStart = useRef<number | null>(IS_WEB ? Date.now() : null);
+  const stableStart = useRef<number | null>((IS_WEB || IS_SIMULATOR) ? Date.now() : null);
   const pulse = useRef(new Animated.Value(1)).current;
 
-  // Web bypass — mark ready immediately without accelerometer
+  // Bypass — mark ready immediately for web/simulator
   useEffect(() => {
-    if (!IS_WEB) return;
+    if (!IS_WEB && !IS_SIMULATOR) return;
     updateSession({
       quality: {
-        confidence_0to100: 0, quality_label: 'Low', reasons: ['Web mode — no motion sensor'],
+        confidence_0to100: 0, quality_label: 'Low', reasons: [IS_WEB ? 'Web mode' : 'Simulator mode'],
         distance_std_cm: null, valid_frame_pct: null,
         tilt_deg_p95: null, lighting_variance: null,
         repeatability_ok: false,
@@ -209,13 +211,13 @@ export const EyeSetupCamera: React.FC = () => {
 
       {/* Bottom panel */}
       <View style={[styles.bottomPanel, { paddingBottom: insets.bottom + 16 }]}>
-        {IS_WEB ? (
-          /* Web bypass — no accelerometer, just proceed */
+        {IS_WEB || IS_SIMULATOR ? (
+          /* Bypass — no accelerometer, just proceed */
           <>
             <View style={styles.webBypassBox}>
-              <Text style={styles.webBypassIcon}>🖥️</Text>
+              <Text style={styles.webBypassIcon}>{IS_WEB ? '🖥️' : '📱'}</Text>
               <Text style={styles.webBypassText}>
-                Web mode — motion sensor unavailable.{'\n'}Position yourself ~40 cm from screen.
+                {IS_WEB ? 'Web mode' : 'Simulator mode'} — motion sensor unavailable.{'\n'}Position yourself ~40 cm from screen.
               </Text>
             </View>
             <TouchableOpacity
