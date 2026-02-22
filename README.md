@@ -36,11 +36,6 @@
 | 🏥 | **Clinical** | Appointment scheduler with push notification reminders + symptom logger |
 | 🆘 | **Emergency SOS** | One-tap SOS button, direct 911 call, emergency contact management with call/SMS |
 
-### 👁️ Eye Tracking (Bonus Feature)
-- Real-time face-to-phone distance monitoring via **VisionCamera + MLKit**
-- Distance zones: too close (<35cm) · ok (35-50cm) · too far (>50cm)
-- HUD overlay with distance bar visualization
-
 ---
 
 ## 🏗️ Architecture
