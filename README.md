@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🏥 AI Health Partner
+# 🏥 Kintsugi 
 
 ### Your AI-Powered Health Companion
 
@@ -13,7 +13,7 @@
 
 <br/>
 
-> 🩺 A fullscreen, dark-themed health companion app with **AI-powered chat**, **real-time vitals monitoring**, **eye tracking**, and **voice call mode** — built for the Axxess 2026 Hackathon.
+> A mobile health companion that combines vitals, mental wellness, recovery support, clinical tracking, and emergency response in one app — built for the Axxess 2026 Hackathon.
 
 <br/>
 
