@@ -35,7 +35,14 @@ export const VitalsCard: React.FC<Props> = ({
       <LinearGradient colors={gradientColors} style={styles.card} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
         {isAnomalous && <View style={styles.anomalyRing} />}
         <Text style={styles.icon}>{icon}</Text>
-        <Text style={styles.value}>{value}</Text>
+        <Text
+          style={styles.value}
+          numberOfLines={1}
+          adjustsFontSizeToFit={true}
+          minimumFontScale={0.5}
+        >
+          {value}
+        </Text>
         <Text style={styles.unit}>{unit}</Text>
         <Text style={styles.label}>{label}</Text>
         {isAnomalous && <Text style={styles.alert}>⚠ Alert</Text>}

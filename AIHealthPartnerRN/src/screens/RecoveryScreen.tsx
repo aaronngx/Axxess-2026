@@ -5,7 +5,8 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getMockRecoveryTasks, RecoveryTask } from '../services/MockDataService';
+import { RecoveryTask } from '../services/MockDataService';
+import { useAppContext } from '../context/AppContext';
 
 const CATEGORY_COLORS: Record<RecoveryTask['category'], [string, string]> = {
   exercise: ['#F7971E', '#FFD200'],
@@ -23,11 +24,9 @@ const CATEGORY_ICONS: Record<RecoveryTask['category'], string> = {
 
 export const RecoveryScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
-  const [tasks, setTasks] = useState<RecoveryTask[]>(getMockRecoveryTasks());
+  const { recoveryTasks: tasks, toggleRecoveryTask: toggleTask } = useAppContext();
 
-  const toggleTask = (id: string) => {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
-  };
+  // toggleTask is now provided by AppContext
 
   const completed = tasks.filter(t => t.completed).length;
   const progress = tasks.length > 0 ? completed / tasks.length : 0;
@@ -35,10 +34,10 @@ export const RecoveryScreen: React.FC = () => {
   return (
     <View style={styles.root}>
       <StatusBar barStyle="light-content" />
-      <LinearGradient colors={['#0A0A1A', '#0D1F1A', '#0A0A1A']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['#161925', '#128208', '#161925']} style={StyleSheet.absoluteFill} />
 
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 24 }]}
+        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 80 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
@@ -99,7 +98,7 @@ export const RecoveryScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0A0A1A' },
+  root: { flex: 1, backgroundColor: '#161925' },
   scroll: { paddingHorizontal: 20 },
   title: { fontSize: 28, fontWeight: '800', color: '#FFFFFF' },
   subtitle: { fontSize: 14, color: 'rgba(255,255,255,0.45)', marginTop: 4, marginBottom: 20 },
@@ -109,15 +108,15 @@ const styles = StyleSheet.create({
   },
   progressRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   progressTextBlock: {},
-  progressBig: { fontSize: 42, fontWeight: '800', color: '#2ECC71' },
+  progressBig: { fontSize: 42, fontWeight: '800', color: '#128208' },
   progressLabel: { fontSize: 14, color: 'rgba(255,255,255,0.5)' },
   progressBarWrap: { flex: 1, marginLeft: 20 },
   progressBarTrack: {
     height: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden',
   },
-  progressBarFill: { height: 8, backgroundColor: '#2ECC71', borderRadius: 4 },
-  progressPct: { fontSize: 13, color: '#2ECC71', fontWeight: '700', marginTop: 6, textAlign: 'right' },
-  congratsText: { fontSize: 14, color: '#2ECC71', marginTop: 12, fontWeight: '600', textAlign: 'center' },
+  progressBarFill: { height: 8, backgroundColor: '#128208', borderRadius: 4 },
+  progressPct: { fontSize: 13, color: '#128208', fontWeight: '700', marginTop: 6, textAlign: 'right' },
+  congratsText: { fontSize: 14, color: '#128208', marginTop: 12, fontWeight: '600', textAlign: 'center' },
   summaryCard: {
     backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 20, padding: 18,
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', marginBottom: 20,
@@ -141,6 +140,6 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center', justifyContent: 'center',
   },
-  checkboxDone: { backgroundColor: '#2ECC71', borderColor: '#2ECC71' },
+  checkboxDone: { backgroundColor: '#128208', borderColor: '#128208' },
   checkmark: { color: '#FFFFFF', fontWeight: '900', fontSize: 14 },
 });

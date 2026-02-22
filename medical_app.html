@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SymmetryHealth - Gait Mobility Analysis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #e0e7ff;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --accent: #8b5cf6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            background: var(--card);
+            border-radius: 32px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+            position: relative;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            padding: 32px 24px 20px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .header p {
+            color: var(--text-sub);
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        /* Subject Selector */
+        .subject-selector {
+            display: flex;
+            gap: 10px;
+            padding: 0 24px 20px;
+        }
+
+        .sub-btn {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .sub-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Main Analysis Area */
+        .analysis-card {
+            flex: 1;
+            padding: 0 24px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        .mode-tags {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .tag {
+            padding: 6px 12px;
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tag-blue {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .gauge-container {
+            position: relative;
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f1f5f9;
+            border-radius: 24px;
+            margin-bottom: 20px;
+        }
+
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 8px solid #cbd5e1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .score-circle .val {
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .score-circle .label {
+            font-size: 10px;
+            color: var(--text-sub);
+            text-transform: uppercase;
+        }
+
+        .circle-fill {
+            position: absolute;
+            top: -8px;
+            left: -8px;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 8px solid var(--primary);
+            clip-path: polygon(50% 50%, -50% -50%, 150% -50%);
+            transition: all 0.5s;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .stat-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            padding: 16px;
+            border-radius: 16px;
+        }
+
+        .stat-card .label {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-bottom: 4px;
+        }
+
+        .stat-card .val {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        /* Controls */
+        .controls {
+            padding: 24px;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 18px;
+            border-radius: 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            background: white;
+            color: var(--text-main);
+            border: 1px solid #e2e8f0;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        /* Animation */
+        @keyframes pulse {
+            0% {
+                opacity: 0.6;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.6;
+            }
+        }
+
+        .analyzing {
+            animation: pulse 1.5s infinite;
+            color: var(--primary);
+            font-weight: 600;
+            text-align: center;
+            margin-top: 20px;
+            display: none;
+        }
+
+        #graphContainer {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 60px;
+            margin-top: 20px;
+            overflow: hidden;
+            border-radius: 8px;
+            background: #f8fafc;
+            padding: 4px;
+        }
+
+        .bar {
+            flex: 1;
+            background: var(--primary);
+            min-width: 3px;
+            border-radius: 2px;
+            transition: height 0.1s;
+        }
+
+        /* Results Overlay */
+        .result-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 10;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .result-content h2 {
+            font-size: 28px;
+            margin-bottom: 12px;
+        }
+
+        .result-content p {
+            color: var(--text-sub);
+            margin-bottom: 30px;
+        }
+
+        .severity {
+            padding: 8px 16px;
+            border-radius: 8px;
+            display: inline-block;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .severity.healthy {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .severity.limp {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="header">
+            <p>SymmetryHealth V1.2</p>
+            <h1>Gait & Mobility</h1>
+        </div>
+
+        <div class="subject-selector">
+            <button class="sub-btn active" onclick="setSubject('101')">Patient 101</button>
+            <button class="sub-btn" onclick="setSubject('103')">Patient 103</button>
+        </div>
+
+        <div class="analysis-card">
+            <div class="mode-tags">
+                <span class="tag tag-blue">Medical Exam</span>
+                <span id="activityTag" class="tag" style="background: #f1f5f9;">Select Test</span>
+            </div>
+
+            <div class="gauge-container">
+                <div class="score-circle">
+                    <div id="liveMag" class="val">--</div>
+                    <div class="label">m/s²</div>
+                </div>
+            </div>
+
+            <div class="stat-grid">
+                <div class="stat-card">
+                    <div class="label">Symmetry Score</div>
+                    <div id="symmetryScore" class="val">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Step Stability</div>
+                    <div id="stabilityVal" class="val">--</div>
+                </div>
+            </div>
+
+            <div id="graphContainer"></div>
+            <div id="statusMsg" class="analyzing">RECORDING TELEMETRY...</div>
+        </div>
+
+        <div class="controls">
+            <button class="btn-primary" onclick="startTest('801-Yurume Ileri')">
+                <svg width="20" height="20" fill="white" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                </svg>
+                Routine Walk (801)
+            </button>
+            <button class="btn-secondary" onclick="startTest('807-Topallama')">Limp Test (807)</button>
+        </div>
+
+        <div id="resultOverlay" class="result-overlay">
+            <div class="result-content">
+                <div id="resultSeverity" class="severity">HEALTHY</div>
+                <h2 id="resultTitle">Analysis Complete</h2>
+                <p id="resultDesc">Your gait pattern shows normal symmetry and step consistency. No signs of
+                    pathological limping detected.</p>
+                <div class="stat-card" style="margin-bottom: 20px;">
+                    <div class="label">Final Consistency</div>
+                    <div id="finalScore" class="val">98%</div>
+                </div>
+                <button class="btn-primary" onclick="dismissResult()">Record & Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script>
+        let currentSubject = '101';
+        let isTesting = false;
+        const liveMag = document.getElementById('liveMag');
+        const symmetryScore = document.getElementById('symmetryScore');
+        const stabilityVal = document.getElementById('stabilityVal');
+        const graphContainer = document.getElementById('graphContainer');
+        const statusMsg = document.getElementById('statusMsg');
+        const resultOverlay = document.getElementById('resultOverlay');
+        const activityTag = document.getElementById('activityTag');
+
+        function setSubject(id) {
+            currentSubject = id;
+            document.querySelectorAll('.sub-btn').forEach(b => {
+                b.classList.toggle('active', b.innerText.includes(id));
+            });
+        }
+
+        function updateGraph(val) {
+            const bar = document.createElement('div');
+            bar.className = 'bar';
+            bar.style.height = `${Math.min(100, (val / 20) * 100)}%`;
+            graphContainer.appendChild(bar);
+            if (graphContainer.children.length > 60) {
+                graphContainer.removeChild(graphContainer.firstChild);
+            }
+        }
+
+        function startTest(activityKey) {
+            if (isTesting) return;
+            isTesting = true;
+            statusMsg.style.display = 'block';
+            activityTag.innerText = activityKey.includes('801') ? 'Routine Walking' : 'Gait Assessment';
+
+            const dataSamples = fallData[currentSubject][activityKey]["Waist"];
+            let idx = 0;
+            let peaks = [];
+
+            const timer = setInterval(() => {
+                if (idx >= dataSamples.length) {
+                    clearInterval(timer);
+                    finalizeTest(peaks, activityKey);
+                    return;
+                }
+
+                const s = dataSamples[idx];
+                const mag = Math.sqrt(s.acc_x ** 2 + s.acc_y ** 2 + s.acc_z ** 2);
+                liveMag.innerText = mag.toFixed(1);
+                updateGraph(mag);
+
+                // Simple peak detection for stability analysis
+                if (idx > 1) {
+                    const prevMag = Math.sqrt(dataSamples[idx - 1].acc_x ** 2 + dataSamples[idx - 1].acc_y ** 2 + dataSamples[idx - 1].acc_z ** 2);
+                    const nextMag = idx < dataSamples.length - 1 ? Math.sqrt(dataSamples[idx + 1].acc_x ** 2 + dataSamples[idx + 1].acc_y ** 2 + dataSamples[idx + 1].acc_z ** 2) : 0;
+                    if (mag > prevMag && mag > nextMag && mag > 11.5) {
+                        peaks.push(mag);
+                        updateStats(peaks);
+                    }
+                }
+                idx++;
+            }, 30);
+        }
+
+        function updateStats(peaks) {
+            if (peaks.length < 2) return;
+            const avg = peaks.reduce((a, b) => a + b, 0) / peaks.length;
+            const variance = peaks.reduce((a, b) => a + (b - avg) ** 2, 0) / peaks.length;
+            const std = Math.sqrt(variance);
+
+            // Symmetry is essentially 100 - (scaled variance)
+            const score = Math.max(0, 100 - (std * 15));
+            symmetryScore.innerText = score.toFixed(0) + '%';
+            stabilityVal.innerText = (100 - (std * 10)).toFixed(0) + '%';
+        }
+
+        function finalizeTest(peaks, activityKey) {
+            isTesting = false;
+            statusMsg.style.display = 'none';
+
+            const avg = peaks.reduce((a, b) => a + b, 0) / peaks.length;
+            const std = Math.sqrt(peaks.reduce((a, b) => a + (b - avg) ** 2, 0) / peaks.length);
+            const score = Math.max(0, 100 - (std * 15)).toFixed(0);
+
+            const isLimp = std > 2.0; // Based on Subject 101/103 analysis
+
+            const sev = document.getElementById('resultSeverity');
+            const title = document.getElementById('resultTitle');
+            const desc = document.getElementById('resultDesc');
+            const finalScore = document.getElementById('finalScore');
+
+            finalScore.innerText = score + '%';
+            if (isLimp) {
+                sev.innerText = 'GAIT ASYMMETRY';
+                sev.className = 'severity limp';
+                title.innerText = 'Limp Pattern Detected';
+                desc.innerText = 'Significant variance in step intensity detected. This pattern is consistent with a weight-bearing limp or antalgic gait.';
+            } else {
+                sev.innerText = 'HEALTHY GAIT';
+                sev.className = 'severity healthy';
+                title.innerText = 'Normal Stability';
+                desc.innerText = 'Your step consistency is within normal clinical ranges. No significant limp signature identified.';
+            }
+
+            resultOverlay.style.display = 'flex';
+        }
+
+        function dismissResult() {
+            resultOverlay.style.display = 'none';
+            liveMag.innerText = '--';
+            symmetryScore.innerText = '--';
+            stabilityVal.innerText = '--';
+            graphContainer.innerHTML = '';
+        }
+    </script>
+</body>
+
+</html>
