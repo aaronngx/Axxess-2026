@@ -24,6 +24,15 @@ import { EyeHistory } from '../features/eye/screens/EyeHistory';
 import { EyeSessionProvider } from '../features/eye/EyeSessionContext';
 import { RootStackParamList } from '../features/eye/models/types';
 
+// Hearing Screening screens
+import { HearingEntry } from '../features/hearing/screens/HearingEntry';
+import { HearingPreCheck } from '../features/hearing/screens/HearingPreCheck';
+import { HearingAppleInput } from '../features/hearing/screens/HearingAppleInput';
+import { HearingSpeechInNoise } from '../features/hearing/screens/HearingSpeechInNoise';
+import { HearingResults } from '../features/hearing/screens/HearingResults';
+import { HearingHistory } from '../features/hearing/screens/HearingHistory';
+import { HearingSessionProvider } from '../features/hearing/HearingSessionContext';
+
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -70,24 +79,34 @@ const TabsNavigator: React.FC = () => (
 export const AppNavigator: React.FC = () => {
   return (
     <EyeSessionProvider>
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false, cardStyle: { backgroundColor: '#0A0A1A' } }}>
-          {/* Main app tabs */}
-          <Stack.Screen name="Tabs" component={TabsNavigator} />
+      <HearingSessionProvider>
+        <NavigationContainer>
+          <Stack.Navigator screenOptions={{ headerShown: false, cardStyle: { backgroundColor: '#0A0A1A' } }}>
+            {/* Main app tabs */}
+            <Stack.Screen name="Tabs" component={TabsNavigator} />
 
-          {/* Eye Vision Screening flow (Phases 1–13) */}
-          <Stack.Screen name="EyeSafetyGate" component={EyeSafetyGate} />
-          <Stack.Screen name="EyeSetupCamera" component={EyeSetupCamera} />
-          <Stack.Screen name="EyePdLock" component={EyePdLock} />
-          <Stack.Screen name="EyeFarTest" component={EyeFarTest} />
-          <Stack.Screen name="EyeAstigDial" component={EyeAstigDial} />
-          <Stack.Screen name="EyeNear" component={EyeNear} />
-          <Stack.Screen name="EyeContrast" component={EyeContrast} />
-          <Stack.Screen name="EyeLowLight" component={EyeLowLight} />
-          <Stack.Screen name="EyeResults" component={EyeResults} />
-          <Stack.Screen name="EyeHistory" component={EyeHistory} />
-        </Stack.Navigator>
-      </NavigationContainer>
+            {/* Eye Vision Screening flow */}
+            <Stack.Screen name="EyeSafetyGate" component={EyeSafetyGate} />
+            <Stack.Screen name="EyeSetupCamera" component={EyeSetupCamera} />
+            <Stack.Screen name="EyePdLock" component={EyePdLock} />
+            <Stack.Screen name="EyeFarTest" component={EyeFarTest} />
+            <Stack.Screen name="EyeAstigDial" component={EyeAstigDial} />
+            <Stack.Screen name="EyeNear" component={EyeNear} />
+            <Stack.Screen name="EyeContrast" component={EyeContrast} />
+            <Stack.Screen name="EyeLowLight" component={EyeLowLight} />
+            <Stack.Screen name="EyeResults" component={EyeResults} />
+            <Stack.Screen name="EyeHistory" component={EyeHistory} />
+
+            {/* Hearing Screening flow */}
+            <Stack.Screen name="HearingEntry" component={HearingEntry} />
+            <Stack.Screen name="HearingPreCheck" component={HearingPreCheck} />
+            <Stack.Screen name="HearingAppleInput" component={HearingAppleInput} />
+            <Stack.Screen name="HearingSpeechInNoise" component={HearingSpeechInNoise} />
+            <Stack.Screen name="HearingResults" component={HearingResults} />
+            <Stack.Screen name="HearingHistory" component={HearingHistory} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </HearingSessionProvider>
     </EyeSessionProvider>
   );
 };

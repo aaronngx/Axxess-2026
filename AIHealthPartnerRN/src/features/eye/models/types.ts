@@ -107,6 +107,7 @@ export interface EyeSessionResult {
 // Root stack navigation param list
 export type RootStackParamList = {
   Tabs: undefined;
+  // Eye Vision Screening
   EyeSafetyGate: undefined;
   EyeSetupCamera: undefined;
   EyePdLock: undefined;
@@ -117,4 +118,11 @@ export type RootStackParamList = {
   EyeLowLight: undefined;
   EyeResults: undefined;
   EyeHistory: undefined;
+  // Hearing Screening
+  HearingEntry: undefined;
+  HearingPreCheck: { source: 'apple' | 'speech_in_noise' | 'symptom_only' };
+  HearingAppleInput: undefined;
+  HearingSpeechInNoise: undefined;
+  HearingResults: undefined;
+  HearingHistory: undefined;
 };

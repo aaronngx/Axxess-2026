@@ -2,13 +2,15 @@
 // Live camera + accelerometer stability gate.
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, Platform } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Accelerometer } from 'expo-sensors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Svg, { Ellipse, Defs, Mask, Rect } from 'react-native-svg';
 import { useEyeSession } from '../EyeSessionContext';
+
+const IS_WEB = Platform.OS === 'web';
 
 const WINDOW_SIZE = 20;      // ~2s at 10 Hz
 const STABLE_THRESHOLD = 0.03; // g — low variance = stable
@@ -33,13 +35,27 @@ export const EyeSetupCamera: React.FC = () => {
   const [permission, requestPermission] = useCameraPermissions();
 
   const [samples, setSamples] = useState<AccelSample[]>([]);
-  const [isStable, setIsStable] = useState(false);
-  const [stableMs, setStableMs] = useState(0);
+  const [isStable, setIsStable] = useState(IS_WEB);
+  const [stableMs, setStableMs] = useState(IS_WEB ? STABLE_DURATION : 0);
   const [ready, setReady] = useState(false);
-  const [lightingOk] = useState(true); // proxy — always OK without ML
+  const [lightingOk] = useState(true);
 
-  const stableStart = useRef<number | null>(null);
+  const stableStart = useRef<number | null>(IS_WEB ? Date.now() : null);
   const pulse = useRef(new Animated.Value(1)).current;
+
+  // Web bypass — mark ready immediately without accelerometer
+  useEffect(() => {
+    if (!IS_WEB) return;
+    updateSession({
+      quality: {
+        confidence_0to100: 0, quality_label: 'Low', reasons: ['Web mode — no motion sensor'],
+        distance_std_cm: null, valid_frame_pct: null,
+        tilt_deg_p95: null, lighting_variance: null,
+        repeatability_ok: false,
+      },
+    });
+    setReady(true);
+  }, []);
 
   // Request camera permission
   useEffect(() => {
@@ -48,8 +64,9 @@ export const EyeSetupCamera: React.FC = () => {
     }
   }, [permission]);
 
-  // Accelerometer subscription
+  // Accelerometer subscription (native only)
   useEffect(() => {
+    if (IS_WEB) return;
     Accelerometer.setUpdateInterval(100); // 10 Hz
     const sub = Accelerometer.addListener(accel => {
       setSamples(prev => {
@@ -161,34 +178,53 @@ export const EyeSetupCamera: React.FC = () => {
 
       {/* Bottom panel */}
       <View style={[styles.bottomPanel, { paddingBottom: insets.bottom + 16 }]}>
-        {/* Stability progress bar */}
-        <View style={styles.progressBg}>
-          <View style={[styles.progressFill, { width: `${progressPct}%` }]} />
-        </View>
-        <Text style={styles.progressLabel}>
-          {ready ? '✅ Stable — ready!' : isStable ? `Stabilising… ${Math.round(progressPct)}%` : 'Hold steady…'}
-        </Text>
-
-        {/* Indicators */}
-        {indicators.map(ind => (
-          <View key={ind.label} style={styles.indicatorRow}>
-            <Text style={[styles.indDot, ind.ok && styles.indDotOk]}>●</Text>
-            <Text style={styles.indLabel}>{ind.label}</Text>
-            <Text style={[styles.indStatus, ind.ok && styles.indStatusOk]}>
-              {ind.ok ? '✓' : '…'}
+        {IS_WEB ? (
+          /* Web bypass — no accelerometer, just proceed */
+          <>
+            <View style={styles.webBypassBox}>
+              <Text style={styles.webBypassIcon}>🖥️</Text>
+              <Text style={styles.webBypassText}>
+                Web mode — motion sensor unavailable.{'\n'}Position yourself ~40 cm from screen.
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.nextBtn}
+              onPress={() => navigation.navigate('EyePdLock')}
+            >
+              <Text style={styles.nextBtnText}>Continue →</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          /* Native — full stability check */
+          <>
+            <View style={styles.progressBg}>
+              <View style={[styles.progressFill, { width: `${progressPct}%` }]} />
+            </View>
+            <Text style={styles.progressLabel}>
+              {ready ? '✅ Stable — ready!' : isStable ? `Stabilising… ${Math.round(progressPct)}%` : 'Hold steady…'}
             </Text>
-          </View>
-        ))}
 
-        <TouchableOpacity
-          style={[styles.nextBtn, !ready && styles.nextBtnDim]}
-          onPress={() => navigation.navigate('EyePdLock')}
-          disabled={!ready}
-        >
-          <Text style={styles.nextBtnText}>
-            {ready ? 'Continue →' : 'Waiting for stability…'}
-          </Text>
-        </TouchableOpacity>
+            {indicators.map(ind => (
+              <View key={ind.label} style={styles.indicatorRow}>
+                <Text style={[styles.indDot, ind.ok && styles.indDotOk]}>●</Text>
+                <Text style={styles.indLabel}>{ind.label}</Text>
+                <Text style={[styles.indStatus, ind.ok && styles.indStatusOk]}>
+                  {ind.ok ? '✓' : '…'}
+                </Text>
+              </View>
+            ))}
+
+            <TouchableOpacity
+              style={[styles.nextBtn, !ready && styles.nextBtnDim]}
+              onPress={() => navigation.navigate('EyePdLock')}
+              disabled={!ready}
+            >
+              <Text style={styles.nextBtnText}>
+                {ready ? 'Continue →' : 'Waiting for stability…'}
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     </View>
   );
@@ -234,4 +270,11 @@ const styles = StyleSheet.create({
   nextBtnDim: { backgroundColor: 'rgba(108,92,231,0.35)' },
   nextBtnText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
   permText: { fontSize: 15, color: 'rgba(255,255,255,0.7)', textAlign: 'center', marginBottom: 20, lineHeight: 22 },
+  webBypassBox: {
+    backgroundColor: 'rgba(162,155,254,0.1)', borderRadius: 14,
+    padding: 16, marginBottom: 16, flexDirection: 'row', alignItems: 'center',
+    borderWidth: 1, borderColor: 'rgba(162,155,254,0.2)',
+  },
+  webBypassIcon: { fontSize: 22, marginRight: 12 },
+  webBypassText: { flex: 1, fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 20 },
 });

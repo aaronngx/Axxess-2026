@@ -11,6 +11,7 @@ import { AnomalyBanner } from '../components/AnomalyBanner';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { eyeStorage } from '../features/eye/storage/eyeStorage';
+import { hearingStorage } from '../features/hearing/storage/hearingStorage';
 
 const { width } = Dimensions.get('window');
 
@@ -21,6 +22,7 @@ export const VitalsDashboard: React.FC = () => {
   const navigation = useNavigation<any>();
 
   const lastEyeSession = eyeStorage.getAllSessionsSync()[0] ?? null;
+  const lastHearingSession = hearingStorage.getAllSessionsSync()[0] ?? null;
 
   const chartData = {
     labels: [],
@@ -156,6 +158,39 @@ export const VitalsDashboard: React.FC = () => {
             </View>
           </View>
           <View style={styles.eyeStartBtn}>
+            <Text style={styles.eyeStartBtnText}>Start →</Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Hearing Check card */}
+        <TouchableOpacity
+          style={styles.eyeCard}
+          onPress={() => navigation.navigate('HearingEntry')}
+          activeOpacity={0.85}
+        >
+          <LinearGradient
+            colors={['rgba(46,204,113,0.15)', 'rgba(39,174,96,0.06)']}
+            style={StyleSheet.absoluteFill}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          />
+          <View style={styles.eyeCardLeft}>
+            <Text style={styles.eyeCardIcon}>👂</Text>
+            <View>
+              <Text style={styles.eyeCardTitle}>Hearing Check</Text>
+              {lastHearingSession ? (
+                <Text style={styles.eyeCardMeta}>
+                  Last: {new Date(lastHearingSession.created_at).toLocaleDateString()} ·{' '}
+                  {lastHearingSession.hearing_function_age != null
+                    ? `${lastHearingSession.hearing_function_age} yr hearing age`
+                    : lastHearingSession.confidence}
+                </Text>
+              ) : (
+                <Text style={styles.eyeCardMeta}>No previous checks</Text>
+              )}
+            </View>
+          </View>
+          <View style={[styles.eyeStartBtn, { backgroundColor: '#27AE60' }]}>
             <Text style={styles.eyeStartBtnText}>Start →</Text>
           </View>
         </TouchableOpacity>
