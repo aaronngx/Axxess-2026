@@ -10,7 +10,9 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHearingSession } from '../HearingSessionContext';
 
-const WHO_HEARWHO_URL = 'https://apps.apple.com/app/hearwho/id1506463301';
+const WHO_HEARWHO_URL = Platform.OS === 'android'
+  ? 'https://play.google.com/store/apps/details?id=com.who.hearwho'
+  : 'https://apps.apple.com/app/hearwho/id1506463301';
 
 export const HearingSpeechInNoise: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -71,7 +73,7 @@ export const HearingSpeechInNoise: React.FC = () => {
             onPress={() => { Linking.openURL(WHO_HEARWHO_URL); setTestDone(true); }}
           >
             <Text style={styles.whoBtnIcon}>🎧</Text>
-            <Text style={styles.whoBtnText}>Open hearWHO App Store Page</Text>
+            <Text style={styles.whoBtnText}>Open hearWHO {Platform.OS === 'android' ? 'Play Store' : 'App Store'} Page</Text>
           </TouchableOpacity>
 
           {testDone && (

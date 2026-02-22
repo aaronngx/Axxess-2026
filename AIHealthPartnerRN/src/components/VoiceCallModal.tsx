@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator, Animated, Alert } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Audio } from 'expo-av';
+import { Audio, AVPlaybackStatus } from 'expo-av';
 import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
 import { getAIResponse, transcribeAudio, generateElevenLabsSpeech, ChatMessage } from '../services/AIService';
@@ -182,7 +182,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
                 isMeteringEnabled: true,
             });
 
-            newRecording.setOnRecordingStatusUpdate((status) => {
+            newRecording.setOnRecordingStatusUpdate((status: Audio.RecordingStatus) => {
                 if (status.canRecord && status.isRecording && status.metering !== undefined) {
                     const normalizedVolume = Math.min(1, Math.max(0, (status.metering + 60) / 60));
                     setVolume(normalizedVolume);
@@ -297,7 +297,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
 
                 soundRef.current = sound;
 
-                sound.setOnPlaybackStatusUpdate((playbackStatus) => {
+                sound.setOnPlaybackStatusUpdate((playbackStatus: AVPlaybackStatus) => {
                     if (playbackStatus.isLoaded && playbackStatus.didJustFinish) {
                         setDebugText('I am listening...');
                         if (isActiveRef.current) startListening();
@@ -319,7 +319,7 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
                 setDebugText('I am listening...');
                 if (isActiveRef.current) startListening();
             },
-            onError: (e) => {
+            onError: (e: Error) => {
                 console.error('Speech error:', e);
                 setDebugText('Speech error.');
                 setStatus('idle');

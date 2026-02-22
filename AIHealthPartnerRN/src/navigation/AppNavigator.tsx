@@ -14,6 +14,7 @@ import { EmergencyScreen } from '../screens/EmergencyScreen';
 import { ClinicalScreen } from '../screens/ClinicalScreen';
 
 // Eye feature screens (Preserved)
+import { EyeSafetyGate } from '../features/eye/screens/EyeSafetyGate';
 import { EyeSetupCamera } from '../features/eye/screens/EyeSetupCamera';
 import { EyePdLock } from '../features/eye/screens/EyePdLock';
 import { EyeFarTest } from '../features/eye/screens/EyeFarTest';
@@ -88,6 +89,7 @@ export const AppNavigator: React.FC = () => {
             <Stack.Screen name="Tabs" component={TabsNavigator} />
 
             {/* Eye Vision Screening flow (Preserved) */}
+            <Stack.Screen name="EyeSafetyGate" component={EyeSafetyGate} />
             <Stack.Screen name="EyeSetupCamera" component={EyeSetupCamera} />
             <Stack.Screen name="EyePdLock" component={EyePdLock} />
             <Stack.Screen name="EyeFarTest" component={EyeFarTest} />
